@@ -128,7 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data directory
+# Training Data
 data/
 
 # MacOs
