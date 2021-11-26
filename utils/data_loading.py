@@ -35,6 +35,11 @@ class BasicDataset(Dataset):
         pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
         img_ndarray = np.asarray(pil_img)
 
+        if is_mask:
+            # Convert mask to black-and-white:
+            img_ndarray = img_ndarray > 0
+            return img_ndarray
+
         if img_ndarray.ndim == 2 and not is_mask:
             img_ndarray = img_ndarray[np.newaxis, ...]
         elif not is_mask:
@@ -43,8 +48,6 @@ class BasicDataset(Dataset):
         if not is_mask:
             img_ndarray = img_ndarray / 255
 
-        # Convert mask to black-and-white:
-        img_ndarray = img_ndarray > 0
         return img_ndarray
 
 
