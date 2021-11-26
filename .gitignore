@@ -133,3 +133,11 @@ data/
 
 # MacOs
 .DS_Store
+
+# Checkpoints
+checkpoints/
+
+# Outputs
+*.pyc
+*.pth
+*.jpg
