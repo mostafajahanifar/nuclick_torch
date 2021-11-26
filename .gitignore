@@ -141,3 +141,6 @@ checkpoints/
 *.pyc
 *.pth
 *.jpg
+
+# wandb
+wandb/
