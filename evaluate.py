@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from utils.dice_score import multiclass_dice_coeff, dice_coeff 
+from models.losses import multiclass_dice_coeff, dice_coeff 
 
 
 def evaluate(net, dataloader, device):

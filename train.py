@@ -11,10 +11,10 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from utils.data_loading import BasicDataset, CarvanaDataset
-from utils.dice_score import dice_loss
+from data.data_loader import BasicDataset, CarvanaDataset
+from models.losses import dice_loss
 from evaluate import evaluate
-from model import UNet
+from models import UNet
 
 dir_img = Path('/root/workspace/nuclei_detection/dataset/compilation/Validation/images/MoNuSeg/')
 dir_mask = Path('/root/workspace/nuclei_detection/dataset/compilation/Validation/masks/MoNuSeg/')
