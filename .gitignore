@@ -129,8 +129,7 @@ dmypy.json
 .pyre/
 
 # Training Data
-data/imgs/
-data/masks/
+*.png
 
 # MacOs
 .DS_Store
