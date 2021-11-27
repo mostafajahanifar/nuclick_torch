@@ -11,7 +11,7 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from data.data_loader import BasicDataset, CarvanaDataset
+from data.dataset_generator import BasicDataset, CarvanaDataset
 from models.losses import dice_loss
 from evaluate import evaluate
 from models import UNet
