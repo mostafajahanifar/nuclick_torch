@@ -5,6 +5,7 @@ from tqdm import tqdm
 from models.losses import multiclass_dice_coeff, dice_coeff 
 
 
+
 def evaluate(net, dataloader, device):
     net.eval()
     num_val_batches = len(dataloader)

@@ -36,6 +36,7 @@ def train_net(net,
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
+
     train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(DefaultConfig.seed))
 
     # 3. Create data loaders
@@ -72,6 +73,7 @@ def train_net(net,
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
+
         with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs }', unit='img', ascii=True) as pbar:
             for batch in train_loader:
                 images = batch['image']
@@ -140,6 +142,7 @@ def train_net(net,
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
+
     parser.add_argument('--epochs', '-e', metavar='E', type=int, default=DefaultConfig.epochs, help='Number of epochs')
     parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=DefaultConfig.batch_size, help='Batch size')
     parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=DefaultConfig.lr,
@@ -149,7 +152,6 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=DefaultConfig.val_percent,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=DefaultConfig.use_amp, help='Use mixed precision')
-
     return parser.parse_args()
 
 
