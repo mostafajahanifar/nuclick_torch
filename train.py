@@ -14,10 +14,10 @@ from tqdm import tqdm
 from utils.data_loading import BasicDataset, CarvanaDataset
 from utils.dice_score import dice_loss
 from evaluate import evaluate
-from unet import UNet
+from model import UNet
 
-dir_img = Path('./data/imgs/')
-dir_mask = Path('./data/masks/')
+dir_img = Path('/root/workspace/nuclei_detection/dataset/compilation/Validation/images/MoNuSeg/')
+dir_mask = Path('/root/workspace/nuclei_detection/dataset/compilation/Validation/masks/MoNuSeg/')
 dir_checkpoint = Path('./checkpoints/')
 
 
