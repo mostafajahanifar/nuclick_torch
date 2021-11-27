@@ -127,3 +127,20 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Training Data
+*.png
+
+# MacOs
+.DS_Store
+
+# Checkpoints
+checkpoints/
+
+# Outputs
+*.pyc
+*.pth
+*.jpg
+
+# wandb
+wandb/
