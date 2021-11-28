@@ -8,9 +8,10 @@ import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 
-from utils.data_loading import BasicDataset
-from unet import UNet
-from utils.utils import plot_img_and_mask
+from data.dataset_generator import BasicDataset
+from models import UNet
+from utils.visualisation import plot_img_and_mask
+from config import DefaultConfig
 
 
 def predict_img(net,
@@ -47,16 +48,16 @@ def predict_img(net,
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    parser.add_argument('--model', '-m', default='MODEL.pth', metavar='FILE',
+    parser.add_argument('--model', '-m', metavar='FILE', required=True,
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
     parser.add_argument('--output', '-o', metavar='INPUT', nargs='+', help='Filenames of output images')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
     parser.add_argument('--no-save', '-n', action='store_true', help='Do not save the output masks')
-    parser.add_argument('--mask-threshold', '-t', type=float, default=0.5,
+    parser.add_argument('--mask-threshold', '-t', type=float, default=DefaultConfig.mask_thresh,
                         help='Minimum probability value to consider a mask pixel white')
-    parser.add_argument('--scale', '-s', type=float, default=0.5,
+    parser.add_argument('--scale', '-s', type=float, default=DefaultConfig.img_scale,
                         help='Scale factor for the input images')
 
     return parser.parse_args()

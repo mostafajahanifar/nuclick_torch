@@ -11,14 +11,11 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from utils.data_loading import BasicDataset, CarvanaDataset
-from utils.dice_score import dice_loss
+from data.dataset_generator import BasicDataset, CarvanaDataset
+from models.losses import dice_loss
 from evaluate import evaluate
-from unet import UNet
-
-dir_img = Path('./data/imgs/')
-dir_mask = Path('./data/masks/')
-dir_checkpoint = Path('./checkpoints/')
+from models import UNet
+from config import DefaultConfig
 
 
 def train_net(net,
@@ -32,14 +29,15 @@ def train_net(net,
               amp: bool = False):
     # 1. Create dataset
     try:
-        dataset = CarvanaDataset(dir_img, dir_mask, img_scale)
+        dataset = CarvanaDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
     except (AssertionError, RuntimeError):
-        dataset = BasicDataset(dir_img, dir_mask, img_scale)
+        dataset = BasicDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
     n_train = len(dataset) - n_val
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(0))
+
+    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(DefaultConfig.seed))
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
@@ -75,7 +73,8 @@ def train_net(net,
     for epoch in range(epochs):
         net.train()
         epoch_loss = 0
-        with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs }', unit='img') as pbar:
+
+        with tqdm(total=n_train, desc=f'Epoch {epoch + 1}/{epochs }', unit='img', ascii=True) as pbar:
             for batch in train_loader:
                 images = batch['image']
                 true_masks = batch['mask']
@@ -110,51 +109,49 @@ def train_net(net,
                 })
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
-                # Evaluation round
-                division_step = (n_train//batch_size)+1 if n_train%batch_size else n_train//batch_size
-                if division_step > 0:
-                    if global_step % division_step == 0:
-                        histograms = {}
-                        for tag, value in net.named_parameters():
-                            tag = tag.replace('/', '.')
-                            histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
-                            histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
+        # Evaluation round
+        if DefaultConfig.val_percent > 0:
+            histograms = {}
+            for tag, value in net.named_parameters():
+                tag = tag.replace('/', '.')
+                histograms['Weights/' + tag] = wandb.Histogram(value.data.cpu())
+                histograms['Gradients/' + tag] = wandb.Histogram(value.grad.data.cpu())
 
-                        val_score = evaluate(net, val_loader, device)
-                        scheduler.step(val_score)
+            val_score = evaluate(net, val_loader, device)
+            scheduler.step(val_score)
 
-                        logging.info('Validation Dice score: {}'.format(val_score))
-                        experiment.log({
-                            'learning rate': optimizer.param_groups[0]['lr'],
-                            'validation Dice': val_score,
-                            'images': wandb.Image(images[0].cpu()),
-                            'masks': {
-                                'true': wandb.Image(true_masks[0].float().cpu()),
-                                'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
-                            },
-                            'step': global_step,
-                            'epoch': epoch,
-                            **histograms
-                        })
+            logging.info('Validation Dice score: {}'.format(val_score))
+            experiment.log({
+                'learning rate': optimizer.param_groups[0]['lr'],
+                'validation Dice': val_score,
+                'images': wandb.Image(images[0].cpu()),
+                'masks': {
+                    'true': wandb.Image(true_masks[0].float().cpu()),
+                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                },
+                'step': global_step,
+                'epoch': epoch,
+                **histograms
+            })
 
         if save_checkpoint:
-            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
-            torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
+            Path(DefaultConfig.dir_checkpoint).mkdir(parents=True, exist_ok=True)
+            torch.save(net.state_dict(), str(DefaultConfig.dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch + 1)))
             logging.info(f'Checkpoint {epoch + 1} saved!')
 
 
 def get_args():
     parser = argparse.ArgumentParser(description='Train the UNet on images and target masks')
-    parser.add_argument('--epochs', '-e', metavar='E', type=int, default=5, help='Number of epochs')
-    parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=4, help='Batch size')
-    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=0.00001,
-                        help='Learning rate', dest='lr')
-    parser.add_argument('--load', '-f', type=str, default=False, help='Load model from a .pth file')
-    parser.add_argument('--scale', '-s', type=float, default=1, help='Downscaling factor of the images')
-    parser.add_argument('--validation', '-v', dest='val', type=float, default=10.0,
-                        help='Percent of the data that is used as validation (0-100)')
-    parser.add_argument('--amp', action='store_true', default=False, help='Use mixed precision')
 
+    parser.add_argument('--epochs', '-e', metavar='E', type=int, default=DefaultConfig.epochs, help='Number of epochs')
+    parser.add_argument('--batch-size', '-b', dest='batch_size', metavar='B', type=int, default=DefaultConfig.batch_size, help='Batch size')
+    parser.add_argument('--learning-rate', '-l', metavar='LR', type=float, default=DefaultConfig.lr,
+                        help='Learning rate', dest='lr')
+    parser.add_argument('--load', '-f', type=str, default=DefaultConfig.model_path, help='Load model from a .pth file')
+    parser.add_argument('--scale', '-s', type=float, default=DefaultConfig.img_scale, help='Downscaling factor of the images')
+    parser.add_argument('--validation', '-v', dest='val', type=float, default=DefaultConfig.val_percent,
+                        help='Percent of the data that is used as validation (0-100)')
+    parser.add_argument('--amp', action='store_true', default=DefaultConfig.use_amp, help='Use mixed precision')
     return parser.parse_args()
 
 
