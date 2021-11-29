@@ -1,8 +1,5 @@
 import os, glob
 import numpy as np
-import cv2
-from utils.mask_operations import maskRelabeling, mask2clickMap
-from scipy.io import savemat
 from data.patch_extractor import patch_extract_save
 
 from tqdm import tqdm
