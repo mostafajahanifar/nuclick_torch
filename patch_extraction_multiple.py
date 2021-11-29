@@ -14,7 +14,7 @@ mat_save_path_val = main_save_val_path + 'mat_files/'
 os.makedirs(mat_save_path, exist_ok=True)
 os.makedirs(mat_save_path_val, exist_ok=True)
 
-datasets = {'Colon_Nuclei': '.png', 'CoNSeP': '.png', 'cpm15': '.png', 'cpm17': '.png', 'CRYONUSEG': '.tif', 'Janowczyk': '.tif', 'monusac': '.tif', 'MoNuSeg': '.tif', 'PanNuke': '.png', 'tnbc': '.png'}
+datasets = {'MoNuSeg': '.tif', 'Colon_Nuclei': '.png', 'CoNSeP': '.png', 'cpm15': '.png', 'cpm17': '.png', 'CRYONUSEG': '.tif', 'Janowczyk': '.tif', 'monusac': '.tif', 'PanNuke': '.png', 'tnbc': '.png'}
 sets = {'Train', 'Test', 'Fold 1', 'Fold 2', 'Fold 3'}
 val_percents = {'Colon_Nuclei': 0.03, 'CoNSeP': 0.1, 'cpm15': 0.5, 'cpm17': 0, 'CRYONUSEG': 0.1, 'Janowczyk': 0.3, 'monusac': 0.1, 'MoNuSeg': 0.1, 'PanNuke': 0, 'tnbc': 0}
 
