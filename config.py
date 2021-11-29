@@ -26,6 +26,7 @@ class Config:
         self.val_percent = val_percent
         self.use_amp = use_amp
         self.mask_thresh = mask_thresh
+        self.patch_size = 128
 
 DefaultConfig = Config()
 
