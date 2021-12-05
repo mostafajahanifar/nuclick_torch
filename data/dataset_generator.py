@@ -1,12 +1,14 @@
 import logging
 from os import listdir
 from os.path import splitext
+import glob
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from scipy.io import loadmat
 
 
 class BasicDataset(Dataset):
@@ -87,3 +89,67 @@ class BasicDataset(Dataset):
 class CarvanaDataset(BasicDataset):
     def __init__(self, images_dir, masks_dir, scale=1):
         super().__init__(images_dir, masks_dir, scale, mask_suffix='_mask')
+
+class NuclickDataset(Dataset):
+    '''Dataset class for NuClick
+    
+    This class includes all the processes needed for loading patches previously
+    extracted for NuClick model training (using `data.patch_extraction` module).
+    '''
+
+    def __init__(self, patch_dir: str, phase: str = 'train', scale: float = None):
+        self.patch_dir = Path(patch_dir)
+        if phase.lower() not in {'train', 'validation', 'val', 'test'}:
+            raise ValueError(f'Invalid running phase of: {patch_dir}. Phase should be `"train"`, `"validation"`, or `"test"`.')
+        self.phase = phase.lower()
+        self.scale = scale
+
+        self.file_paths = list(self.patch_dir.glob('*.mat'))
+        if len(self.file_paths)==0:
+            raise RuntimeError(f'No input file found in {patch_dir}, make sure you put your images there')
+        self.ids = [path.stem for path in self.file_paths]
+        logging.info(f'Creating dataset with {len(self.ids)} examples')
+
+    
+    def __len__(self):
+        return len(self.ids)
+
+
+    @classmethod
+    def preprocess(slef, pil_img, scale, is_mask):
+        w, h = pil_img.size
+        newW, newH = int(scale * w), int(scale * h)
+        assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
+        pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
+        img_ndarray = np.asarray(pil_img)
+
+        if is_mask:
+            # Convert mask to black-and-white:
+            img_ndarray = img_ndarray > 0
+            return img_ndarray
+
+        if img_ndarray.ndim == 2 and not is_mask:
+            img_ndarray = img_ndarray[np.newaxis, ...]
+        elif not is_mask:
+            img_ndarray = img_ndarray.transpose((2, 0, 1))
+
+        if not is_mask:
+            img_ndarray = img_ndarray / 255
+
+        return img_ndarray
+       
+
+    def __getitem__(self, idx):
+        mat_file = loadmat(self.file_paths[idx])
+        img = mat_file['img']
+        mask = mat_file['mask']
+        others = mat_file['others']
+
+        img = self.preprocess(img, self.scale, is_mask=False)
+        mask = self.preprocess(mask, self.scale, is_mask=True)
+        others = self.preprocess(others, self.scale, is_mask=True)
+
+        return {
+            'image': torch.as_tensor(img.copy()).float().contiguous(),
+            'mask': torch.as_tensor(mask.copy()).long().contiguous(),
+        }
