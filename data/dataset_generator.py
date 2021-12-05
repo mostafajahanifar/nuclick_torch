@@ -1,14 +1,17 @@
 import logging
 from os import listdir
 from os.path import splitext
-import glob
 from pathlib import Path
 
 import numpy as np
 import torch
 from PIL import Image
+import cv2
 from torch.utils.data import Dataset
 from scipy.io import loadmat
+from config import DefaultConfig
+
+from utils.guiding_signals import PointGuidingSignal
 
 
 class BasicDataset(Dataset):
@@ -97,12 +100,14 @@ class NuclickDataset(Dataset):
     extracted for NuClick model training (using `data.patch_extraction` module).
     '''
 
-    def __init__(self, patch_dir: str, phase: str = 'train', scale: float = None):
+    def __init__(self, patch_dir: str, phase: str = 'train', scale: float = None, drop_rate: float = 0, jitter_range: int = 3):
         self.patch_dir = Path(patch_dir)
         if phase.lower() not in {'train', 'validation', 'val', 'test'}:
             raise ValueError(f'Invalid running phase of: {patch_dir}. Phase should be `"train"`, `"validation"`, or `"test"`.')
         self.phase = phase.lower()
         self.scale = scale
+        self.drop_rate = drop_rate
+        self.jitter_range = jitter_range
 
         self.file_paths = list(self.patch_dir.glob('*.mat'))
         if len(self.file_paths)==0:
@@ -116,17 +121,17 @@ class NuclickDataset(Dataset):
 
 
     @classmethod
-    def preprocess(slef, pil_img, scale, is_mask):
-        w, h = pil_img.size
+    def preprocess(slef, img, scale, is_mask):
+        [h, w] = img.shape[:2]
         newW, newH = int(scale * w), int(scale * h)
         assert newW > 0 and newH > 0, 'Scale is too small, resized images would have no pixel'
-        pil_img = pil_img.resize((newW, newH), resample=Image.NEAREST if is_mask else Image.BICUBIC)
-        img_ndarray = np.asarray(pil_img)
 
         if is_mask:
             # Convert mask to black-and-white:
-            img_ndarray = img_ndarray > 0
+            img_ndarray = cv2.resize(img, (newW, newH), interpolation=cv2.INTER_NEAREST)
             return img_ndarray
+        else:
+            img_ndarray = cv2.resize(img, (newW, newH), interpolation=cv2.INTER_CUBIC)
 
         if img_ndarray.ndim == 2 and not is_mask:
             img_ndarray = img_ndarray[np.newaxis, ...]
@@ -149,7 +154,14 @@ class NuclickDataset(Dataset):
         mask = self.preprocess(mask, self.scale, is_mask=True)
         others = self.preprocess(others, self.scale, is_mask=True)
 
+        # create the guiding signal generator
+        signal_gen = PointGuidingSignal(mask, others, perturb=DefaultConfig.perturb)
+        inc_signal = signal_gen.inclusion_map()
+        exc_signal = signal_gen.exclusion_map(random_drop=self.drop_rate, random_jitter=self.jitter_range)
+
+        input = np.concatenate((img, inc_signal[np.newaxis, ...], exc_signal[np.newaxis, ...]), axis=0)
+
         return {
-            'image': torch.as_tensor(img.copy()).float().contiguous(),
+            'image': torch.as_tensor(input.copy()).float().contiguous(),
             'mask': torch.as_tensor(mask.copy()).long().contiguous(),
         }

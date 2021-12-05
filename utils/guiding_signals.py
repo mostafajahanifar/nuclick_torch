@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import cv2
 from utils.mask_operations import adaptive_distance_thresholding
@@ -8,10 +9,9 @@ class GuidingSignal(object):
     This class include some special methods that inclusion and exclusion guiding signals
     for different application can be created based on.
     '''
-    def __init__(self, mask: np.ndarray, phase: str, others: np.ndarray = None, kernel_size: int = 3) -> None:
+    def __init__(self, mask: np.ndarray, others: np.ndarray, kernel_size: int = 3) -> None:
         self.mask = self.mask_validator(mask>0.5)
         self.others = others
-        self.phase = phase
         self.kernel_size = kernel_size
         self.current_mask = self.mask_preprocess(self.mask, kernel_size=self.kernel_size)
     
@@ -19,13 +19,16 @@ class GuidingSignal(object):
     def mask_preprocess(mask, kernel_size=3):
         kernel = np.ones((kernel_size,kernel_size),np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        if np.all(mask==np.zeros_like(mask)):
+            warnings.warn(f'The kernel_size (radius) of {kernel_size} may be too high, consider checking '
+            'the intermediate output for the sanity of generated masks.')
         return mask
 
     @staticmethod
     def mask_validator(mask):
         '''Validate the input mask be np.uint8 and 2D'''
         assert len(mask.shape)==2, "Mask must be a 2D array (NxM)"
-        if not issubclass(mask[0, 0], np.integer):
+        if not issubclass(type(mask[0, 0]), np.integer):
             mask = np.uint8(mask)
         return mask
 
@@ -38,9 +41,9 @@ class GuidingSignal(object):
         raise NotImplementedError
 
 class PointGuidingSignal(GuidingSignal):
-    def __init__(self, mask: np.ndarray, phase: str, perturb: str = 'None') -> None:
-        super().__init__(mask, phase)
-        if perturb.lower not in {'none', 'distance', 'inside'}:
+    def __init__(self, mask: np.ndarray, others: np.ndarray, perturb: str = 'None', **kwargs) -> None:
+        super().__init__(mask, others, **kwargs)
+        if perturb.lower() not in {'none', 'distance', 'inside'}:
             raise ValueError(f'Invalid running perturb type of: {perturb}. Perturn type should be `"None"`, `"inside"`, or `"distance"`.')
         self.perturb = perturb.lower()
 
@@ -52,14 +55,18 @@ class PointGuidingSignal(GuidingSignal):
             pointMask[int(centroid[0]),int(centroid[1]),0] = 1
             return pointMask, self.current_mask
         elif self.perturb=='distance':
-            self.current_mask, _ = adaptive_distance_thresholding(self.current_mask)
-        
-        indices = np.argwhere(self.current_mask==1) 
-        rndIdx = np.random.randint(0, len(indices))
-        rndX = indices[rndIdx, 1]
-        rndY = indices[rndIdx, 0]
-        pointMask = np.zeros_like(self.current_mask)   
-        pointMask[rndY,rndX,0] = 1
+            new_mask, _ = adaptive_distance_thresholding(self.current_mask)
+        else: # if self.perturb=='inside':
+            new_mask = self.current_mask.copy()
+
+        # Creating the point map
+        pointMask = np.zeros_like(self.current_mask) 
+        indices = np.argwhere(new_mask==1)
+        if len(indices)>0:
+            rndIdx = np.random.randint(0, len(indices))
+            rndX = indices[rndIdx, 1]
+            rndY = indices[rndIdx, 0]
+            pointMask[rndY, rndX] = 1
 
         return pointMask
 
@@ -69,8 +76,7 @@ class PointGuidingSignal(GuidingSignal):
 
         centroids = centroids[1:, :] # removing the first centroid, it's background
         if random_jitter:
-            centroids += np.random.uniform(low=-random_jitter, high=random_jitter,
-                                            size=centroids.shape)
+            centroids = self.jitterClicks (self.current_mask.shape, centroids, jitter_range=random_jitter)
         if random_drop: # randomly dropping some of the points
             drop_prob = np.random.uniform(0, random_drop)
             num_select = int((1-drop_prob)*centroids.shape[0])
@@ -84,15 +90,13 @@ class PointGuidingSignal(GuidingSignal):
 
         return pointMask
 
-def jitterClicks (weightMap):
-    pointPos = np.argwhere(weightMap[:,:,0]>0)
-    if len(pointPos)>0:
-        xPos = pointPos[0,1] + np.random.randint(-3,3)
-        xPos = np.min([xPos,weightMap.shape[1]-1])
-        xPos = np.max([xPos,0])
-        yPos = pointPos[0,0] + np.random.randint(-3,3)
-        yPos = np.min([yPos,weightMap.shape[0]-1])
-        yPos = np.max([yPos,0])
-        pointMask = np.zeros_like(weightMap)
-        pointMask[yPos,xPos,0] = 1
-        return pointMask
+    @staticmethod
+    def jitterClicks (shape, centroids, jitter_range=3):
+        ''' Randomly jitter the centroid points
+        Points should be an array in (x, y) format while shape is (H, W) of the point map
+        '''
+        centroids += np.random.uniform(low=-jitter_range, high=jitter_range,
+                                            size=centroids.shape)
+        centroids[:, 0] = np.clip(centroids[:, 0], 0, shape[1]-1)
+        centroids[:, 1] = np.clip(centroids[:, 1], 0, shape[0]-1)
+        return centroids

@@ -67,7 +67,7 @@ def adaptive_distance_thresholding (mask):
     else:
         thresh = np.random.uniform(low_thresh, high_thresh)
     new_mask = dist>thresh
-    if new_mask == np.zeros_like(new_mask):
+    if np.all(new_mask == np.zeros_like(new_mask)):
         new_mask = mask
         warnings.warn('Adaptive distance thresholding faild, using the original mask')
     return new_mask, dist
