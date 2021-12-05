@@ -11,7 +11,7 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from data.dataset_generator import BasicDataset, CarvanaDataset
+from data.dataset_generator import BasicDataset, CarvanaDataset, NuclickDataset
 from models.losses import dice_loss
 from evaluate import evaluate
 from models import UNet
@@ -28,10 +28,7 @@ def train_net(net,
               img_scale: float = 0.5,
               amp: bool = False):
     # 1. Create dataset
-    try:
-        dataset = CarvanaDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
-    except (AssertionError, RuntimeError):
-        dataset = BasicDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
+    dataset = NuclickDataset(DefaultConfig.dir_patch, phase='train', scale=1, drop_rate=0.5, jitter_range=3)
 
     # 2. Split into train / validation partitions
     n_val = int(len(dataset) * val_percent)
@@ -124,10 +121,11 @@ def train_net(net,
             experiment.log({
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
-                'images': wandb.Image(images[0].cpu()),
+                'images': wandb.Image(images[0, :3, :, :].cpu()),
                 'masks': {
                     'true': wandb.Image(true_masks[0].float().cpu()),
-                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                    'pred': wandb.Image(masks_pred[0, 1, :, :].float().cpu()),
+                    # 'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
                 },
                 'step': global_step,
                 'epoch': epoch,
@@ -165,7 +163,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=3, n_classes=2, bilinear=True)
+    net = UNet(n_channels=5, n_classes=2, bilinear=True)
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'

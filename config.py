@@ -5,9 +5,10 @@ class Config:
     seed=0,
     dir_img='/root/workspace/nuclei_detection/dataset/compilation/Train/images/MoNuSeg/',
     dir_mask='/root/workspace/nuclei_detection/dataset/compilation/Train/masks/MoNuSeg/',
+    dir_patch='/root/workspace/nuclei_instances_datasets/NuClick/MoNuSegTrain/',
     dir_checkpoint='./checkpoints/',
     epochs=10,
-    batch_size=16,
+    batch_size=64,
     lr=0.001,
     model_path=None,
     img_scale=1,
@@ -17,6 +18,7 @@ class Config:
         self.seed = seed
         self.dir_img = Path(dir_img)
         self.dir_mask = Path(dir_mask)
+        self.dir_patch = Path(dir_patch)
         self.dir_checkpoint = Path(dir_checkpoint)
         self.epochs = epochs
         self.batch_size = batch_size

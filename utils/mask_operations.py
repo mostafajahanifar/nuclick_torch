@@ -59,7 +59,7 @@ def adaptive_distance_thresholding (mask):
     dist = cv2.distanceTransform(mask, cv2.DIST_L2, 0)
     tempMean = np.mean(dist[dist>0])
     tempStd = np.std(dist[dist>0])
-    tempTol = tempStd//2
+    tempTol = tempStd/2
     low_thresh = np.max([tempMean-tempTol, 0])
     high_thresh = np.min([tempMean+tempTol, np.max(dist)-tempTol])
     if low_thresh>=high_thresh:
@@ -68,6 +68,5 @@ def adaptive_distance_thresholding (mask):
         thresh = np.random.uniform(low_thresh, high_thresh)
     new_mask = dist>thresh
     if np.all(new_mask == np.zeros_like(new_mask)):
-        new_mask = mask
-        warnings.warn('Adaptive distance thresholding faild, using the original mask')
+        new_mask = dist>tempMean
     return new_mask, dist

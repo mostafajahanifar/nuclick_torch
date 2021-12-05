@@ -9,11 +9,15 @@ class GuidingSignal(object):
     This class include some special methods that inclusion and exclusion guiding signals
     for different application can be created based on.
     '''
-    def __init__(self, mask: np.ndarray, others: np.ndarray, kernel_size: int = 3) -> None:
+    def __init__(self, mask: np.ndarray, others: np.ndarray, kernel_size: int = 0) -> None:
         self.mask = self.mask_validator(mask>0.5)
-        self.others = others
         self.kernel_size = kernel_size
-        self.current_mask = self.mask_preprocess(self.mask, kernel_size=self.kernel_size)
+        if kernel_size:
+            self.current_mask = self.mask_preprocess(self.mask, kernel_size=self.kernel_size)
+        else:
+            self.current_mask = self.mask_validator(mask>0.5)
+        self.others = others
+        
     
     @staticmethod
     def mask_preprocess(mask, kernel_size=3):
@@ -54,7 +58,7 @@ class PointGuidingSignal(GuidingSignal):
             pointMask = np.zeros_like(self.current_mask)   
             pointMask[int(centroid[0]),int(centroid[1]),0] = 1
             return pointMask, self.current_mask
-        elif self.perturb=='distance':
+        elif self.perturb=='distance' and np.any(self.current_mask>0):
             new_mask, _ = adaptive_distance_thresholding(self.current_mask)
         else: # if self.perturb=='inside':
             new_mask = self.current_mask.copy()
