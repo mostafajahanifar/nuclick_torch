@@ -75,3 +75,56 @@ class OutConv(nn.Module):
 
     def forward(self, x):
         return self.conv(x)
+
+
+
+
+
+
+#--------------------New layers development in progress-----------------
+
+class Conv_Bn_Relu(nn.Module):
+    """(convolution => [BN] => ReLU/sigmoid)"""
+    """No regularizer"""
+
+
+    def __init__(self, in_channels, out_channels=32, 
+                kernelSize=(3,3), strds=(1,1),
+                useBias=False, dilatationRate=(1,1), 
+                actv='relu', doBatchNorm=True
+                ):
+
+        super().__init__()
+
+        self.conv_bn_relu = self.get_block(in_channels, out_channels, kernelSize,
+                strds, useBias, dilatationRate, actv, doBatchNorm
+        )
+        
+
+    def forward(self, x):
+        return self.conv_bn_relu(x)
+
+
+    def get_block(self, in_channels, out_channels, 
+            kernelSize, strds,
+            useBias, dilatationRate, 
+            actv, doBatchNorm
+            ):
+
+        layers = [
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernelSize, 
+                stride=strds, dilation=dilatationRate, bias=useBias
+            )
+        ]
+
+        if doBatchNorm:
+            layers.append(nn.BatchNorm2d(num_features=out_channels,eps=1.001e-5))
+
+        if actv == 'relu':
+            layers.append(nn.ReLU())
+        elif actv == 'sigmoid':
+            layers.append(nn.Sigmoid())
+
+        block = nn.Sequential(*layers)
+        return block
+
