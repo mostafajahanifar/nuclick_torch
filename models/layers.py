@@ -3,6 +3,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.conv import Conv1d
+
+
+bn_axis = 1
 
 
 class DoubleConv(nn.Module):
@@ -89,27 +93,27 @@ class Conv_Bn_Relu(nn.Module):
 
 
     def __init__(self, in_channels, out_channels=32, 
-                kernelSize=(3,3), strds=(1,1),
-                useBias=False, dilatationRate=(1,1), 
-                actv='relu', doBatchNorm=True
-                ):
+        kernelSize=(3,3), strds=(1,1),
+        useBias=False, dilatationRate=(1,1), 
+        actv='relu', doBatchNorm=True
+    ):
 
         super().__init__()
 
         self.conv_bn_relu = self.get_block(in_channels, out_channels, kernelSize,
-                strds, useBias, dilatationRate, actv, doBatchNorm
+            strds, useBias, dilatationRate, actv, doBatchNorm
         )
         
 
-    def forward(self, x):
-        return self.conv_bn_relu(x)
+    def forward(self, input):
+        return self.conv_bn_relu(input)
 
 
     def get_block(self, in_channels, out_channels, 
-            kernelSize, strds,
-            useBias, dilatationRate, 
-            actv, doBatchNorm
-            ):
+        kernelSize, strds,
+        useBias, dilatationRate, 
+        actv, doBatchNorm
+    ):
 
         layers = [
             nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernelSize, 
@@ -127,4 +131,58 @@ class Conv_Bn_Relu(nn.Module):
 
         block = nn.Sequential(*layers)
         return block
+
+
+class Multiscale_Conv_Block(nn.Module):
+
+
+    def __init__(self, in_channels, kernelSizes, 
+        dilatationRates, out_channels=32, strds=(1,1),
+        actv='relu', useBias=False, isDense=True
+    ):
+
+        super().__init__()
+
+        if isDense:
+            self.conv_block_0 = Conv_Bn_Relu(in_channels=in_channels, out_channels=4*out_channels, kernelSize=1, 
+                strds=strds, actv=actv, useBias=useBias)
+            self.conv_block_5 = Conv_Bn_Relu(in_channels=in_channels, out_channels=out_channels, kernelSize=3, 
+                strds=strds, actv=actv, useBias=useBias)
+        else:
+            self.conv_block_0 = None
+            self.conv_block_5 = None
+
+        self.conv_block_1 = Conv_Bn_Relu(in_channels=in_channels, out_channels=out_channels, kernelSize=kernelSizes[0],
+                strds=strds, actv=actv, useBias=useBias, dilatationRate=(dilatationRates[0], dilatationRates[0]))
+            
+        self.conv_block_2 = Conv_Bn_Relu(in_channels=in_channels, out_channels=out_channels, kernelSize=kernelSizes[1],
+                strds=strds, actv=actv, useBias=useBias, dilatationRate=(dilatationRates[1], dilatationRates[1]))
+
+        self.conv_block_3 = Conv_Bn_Relu(in_channels=in_channels, out_channels=out_channels, kernelSize=kernelSizes[2],
+                strds=strds, actv=actv, useBias=useBias, dilatationRate=(dilatationRates[2], dilatationRates[2]))
+
+        self.conv_block_4 = Conv_Bn_Relu(in_channels=in_channels, out_channels=out_channels, kernelSize=kernelSizes[3],
+                strds=strds, actv=actv, useBias=useBias, dilatationRate=(dilatationRates[3], dilatationRates[3]))
+
+
+    def forward(self, input_map):
+        #If isDense == True
+        if self.conv_block_0 is not None:
+            conv0 = self.conv_block_0(input_map)
+        else:
+            conv0 = input_map
+
+        conv1 = self.conv_block_1(conv0)
+        conv2 = self.conv_block_2(conv0)
+        conv3 = self.conv_block_3(conv0)
+        conv4 = self.conv_block_4(conv0)
+        output_map = torch.cat([conv1, conv2, conv3, conv4], dim=bn_axis)
+
+        #If isDense == True
+        if self.conv_block_5 is not None:
+            output_map = self.conv_block_5(output_map)
+            output_map = torch.cat([input_map, output_map], dim=bn_axis)
+
+        return output_map
+
 
