@@ -86,10 +86,10 @@ class OutConv(nn.Module):
 
 
 #--------------------New layers development in progress-----------------
-
+"""(convolution => [BN] => ReLU/sigmoid)"""
+"""No regularizer"""
 class Conv_Bn_Relu(nn.Module):
-    """(convolution => [BN] => ReLU/sigmoid)"""
-    """No regularizer"""
+
 
 
     def __init__(self, in_channels, out_channels=32, 
@@ -143,6 +143,7 @@ class Conv_Bn_Relu(nn.Module):
         return block
 
 
+"""Multiscale Conv Block"""
 class Multiscale_Conv_Block(nn.Module):
 
 
@@ -198,3 +199,45 @@ class Multiscale_Conv_Block(nn.Module):
             output_map = torch.cat([input_map, output_map], dim=bn_axis)
 
         return output_map
+
+
+"""Residual_Conv"""
+class Residual_Conv(nn.Module):
+
+
+    def __init__(self, in_channels, out_channels=32, 
+        kernelSize=(3,3), strds=(1,1), actv='relu', 
+        useBias=False, dilatationRate=(1,1)
+    ):
+        super().__init__()
+
+        if actv == 'selu':
+            self.conv_block_1 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
+                actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=False
+            )
+            self.conv_block_2 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
+                actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=False
+            )
+            self.activation = nn.SELU()
+        else:
+            self.conv_block_1 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
+                actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=True
+            )
+            self.conv_block_2 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
+                actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=True
+            )
+
+            if actv == 'relu':
+                self.activation = nn.ReLU()
+            
+            if actv == 'sigmoid':
+                self.activation = nn.Sigmoid()
+
+
+    def forward(self, input):
+        conv1 = self.conv_block_1(input)
+        conv2 = self.conv_block_2(conv1)
+
+        out = torch.add(conv1, conv2)
+        out = self.activation(out)
+        return out
