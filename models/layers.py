@@ -115,19 +115,29 @@ class Conv_Bn_Relu(nn.Module):
         actv, doBatchNorm
     ):
 
-        layers = [
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernelSize, 
+        layers = []
+
+        conv1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernelSize, 
                 stride=strds, dilation=dilatationRate, bias=useBias
             )
-        ]
 
-        if doBatchNorm:
+        if actv == 'selu':
+            #(Can't find 'lecun_normal' equivalent in PyTorch)
+            torch.nn.init.xavier_normal_(conv1.weight)
+        else:
+            torch.nn.init.xavier_uniform_(conv1.weight)
+
+        layers.append(conv1)
+
+        if actv != 'selu' and doBatchNorm:
             layers.append(nn.BatchNorm2d(num_features=out_channels,eps=1.001e-5))
 
         if actv == 'relu':
             layers.append(nn.ReLU())
         elif actv == 'sigmoid':
             layers.append(nn.Sigmoid())
+        elif actv == 'selu':
+            layers.append(nn.SELU())
 
         block = nn.Sequential(*layers)
         return block
@@ -143,6 +153,7 @@ class Multiscale_Conv_Block(nn.Module):
 
         super().__init__()
 
+        #Initialise conv blocks
         if isDense:
             self.conv_block_0 = Conv_Bn_Relu(in_channels=in_channels, out_channels=4*out_channels, kernelSize=1, 
                 strds=strds, actv=actv, useBias=useBias)
@@ -176,13 +187,14 @@ class Multiscale_Conv_Block(nn.Module):
         conv2 = self.conv_block_2(conv0)
         conv3 = self.conv_block_3(conv0)
         conv4 = self.conv_block_4(conv0)
+
+        #(Not sure about bn_axis)
         output_map = torch.cat([conv1, conv2, conv3, conv4], dim=bn_axis)
 
         #If isDense == True
         if self.conv_block_5 is not None:
             output_map = self.conv_block_5(output_map)
+            #(Not sure about bn_axis)
             output_map = torch.cat([input_map, output_map], dim=bn_axis)
 
         return output_map
-
-
