@@ -11,7 +11,7 @@ from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
-from data.dataset_generator import BasicDataset, CarvanaDataset
+from data.dataset_generator import NuclickDataset
 from models.losses import dice_loss
 from evaluate import evaluate
 from models import UNet
@@ -27,17 +27,30 @@ def train_net(net,
               save_checkpoint: bool = True,
               img_scale: float = 0.5,
               amp: bool = False):
-    # 1. Create dataset
-    try:
-        dataset = CarvanaDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
-    except (AssertionError, RuntimeError):
-        dataset = BasicDataset(DefaultConfig.dir_img, DefaultConfig.dir_mask, DefaultConfig.img_scale)
-
-    # 2. Split into train / validation partitions
-    n_val = int(len(dataset) * val_percent)
-    n_train = len(dataset) - n_val
-
-    train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(DefaultConfig.seed))
+    # 1. Create train and validatoin dataset
+    if DefaultConfig.dir_val is not None: # create validation set based on dir_val
+        train_set = NuclickDataset(DefaultConfig.dir,
+                                   phase='train',
+                                   scale=DefaultConfig.img_scale,
+                                   drop_rate=DefaultConfig.drop_rate,
+                                   jitter_range=DefaultConfig.jitter_range)
+        n_train = len(train_set)
+        val_set = NuclickDataset(DefaultConfig.dir_val,
+                                   phase='validation',
+                                   scale=DefaultConfig.img_scale,
+                                   drop_rate=0,
+                                   jitter_range=0)
+        n_val = len(val_set)
+    else: # create the validation set as a (randomly selected) percentage of training set
+        dataset = NuclickDataset(DefaultConfig.dir,
+                                 phase='train',
+                                 scale=DefaultConfig.img_scale,
+                                 drop_rate=DefaultConfig.drop_rate,
+                                 jitter_range=DefaultConfig.jitter_range)
+        # Split into train / validation partitions
+        n_val = int(len(dataset) * val_percent)
+        n_train = len(dataset) - n_val
+        train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(DefaultConfig.seed))
 
     # 3. Create data loaders
     loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
@@ -110,7 +123,7 @@ def train_net(net,
                 pbar.set_postfix(**{'loss (batch)': loss.item()})
 
         # Evaluation round
-        if DefaultConfig.val_percent > 0:
+        if n_val > 0:
             histograms = {}
             for tag, value in net.named_parameters():
                 tag = tag.replace('/', '.')
@@ -124,10 +137,10 @@ def train_net(net,
             experiment.log({
                 'learning rate': optimizer.param_groups[0]['lr'],
                 'validation Dice': val_score,
-                'images': wandb.Image(images[0].cpu()),
+                'images': wandb.Image(images[0, :3, :, :].cpu()),
                 'masks': {
                     'true': wandb.Image(true_masks[0].float().cpu()),
-                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1).argmax(dim=1)[0].float().cpu()),
+                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0, 1, :, :].float().cpu()),
                 },
                 'step': global_step,
                 'epoch': epoch,
@@ -165,7 +178,7 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=3, n_classes=2, bilinear=True)
+    net = UNet(n_channels=5, n_classes=2, bilinear=True)
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
