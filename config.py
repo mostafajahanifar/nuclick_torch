@@ -4,14 +4,14 @@ class Config:
     def __init__(self,
     seed=0,
     dir='/root/workspace/nuclei_instances_datasets/NuClick/MoNuSegTrain/',
-    dir_val='/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
+    dir_val=None, # '/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
     dir_checkpoint='./checkpoints/',
     epochs=10,
-    batch_size=32,
+    batch_size=16,
     lr=0.001,
     model_path=None,
     img_scale=1,
-    val_percent=0,
+    val_percent=20,
     use_amp=False,
     mask_thresh=0.5) -> None:
         self.seed = seed

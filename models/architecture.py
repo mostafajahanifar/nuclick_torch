@@ -40,15 +40,15 @@ class UNet(nn.Module):
 class NuClick_NN(nn.Module):
 
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, n_channels, n_classes):
         super().__init__()
 
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.n_channels = n_channels
+        self.n_classes = n_classes
 
         #-------------Conv_Bn_Relu blocks------------
         self.conv_block_1 = nn.Sequential(
-            Conv_Bn_Relu(in_channels=self.in_channels, out_channels=64, kernelSize=7),
+            Conv_Bn_Relu(in_channels=self.n_channels, out_channels=64, kernelSize=7),
             Conv_Bn_Relu(in_channels=64, out_channels=32, kernelSize=5),
             Conv_Bn_Relu(in_channels=32, out_channels=32, kernelSize=3)
         )
@@ -59,33 +59,33 @@ class NuClick_NN(nn.Module):
             Conv_Bn_Relu(in_channels=32, out_channels=32)
         )
 
-        self.conv_block_3 = Conv_Bn_Relu(in_channels=32, out_channels=self.out_channels,
-            kernelSize=(1,1), actv='sigmoid', useBias=True, doBatchNorm=False)
+        self.conv_block_3 = Conv_Bn_Relu(in_channels=32, out_channels=self.n_classes,
+            kernelSize=(1,1), actv=None, useBias=True, doBatchNorm=False)
 
         #-------------Residual_Conv blocks------------
         self.residual_block_1 = nn.Sequential(
-            Residual_Conv(in_channels=64, out_channels=64),
+            Residual_Conv(in_channels=32, out_channels=64),
             Residual_Conv(in_channels=64, out_channels=64)
         )
 
-        self.residual_block_2 = Residual_Conv(in_channels=128, out_channels=128)
+        self.residual_block_2 = Residual_Conv(in_channels=64, out_channels=128)
 
         self.residual_block_3 = Residual_Conv(in_channels=128, out_channels=128)
 
         self.residual_block_4 = nn.Sequential(
-            Residual_Conv(in_channels=256, out_channels=256),
+            Residual_Conv(in_channels=128, out_channels=256),
             Residual_Conv(in_channels=256, out_channels=256),
             Residual_Conv(in_channels=256, out_channels=256)
         )
 
         self.residual_block_5 = nn.Sequential(
-            Residual_Conv(in_channels=512, out_channels=512),
+            Residual_Conv(in_channels=256, out_channels=512),
             Residual_Conv(in_channels=512, out_channels=512),
             Residual_Conv(in_channels=512, out_channels=512)
         )
 
         self.residual_block_6 = nn.Sequential(
-            Residual_Conv(in_channels=1024, out_channels=1024),
+            Residual_Conv(in_channels=512, out_channels=1024),
             Residual_Conv(in_channels=1024, out_channels=1024)
         )
 
@@ -130,43 +130,43 @@ class NuClick_NN(nn.Module):
 
         #-------------ConvTranspose2d blocks------------
         self.conv_transpose_1 = nn.ConvTranspose2d(in_channels=1024, out_channels=512,
-            kernel_size=2, stride=(2,2)
+            kernel_size=2, stride=(2,2),
         )
 
         self.conv_transpose_2 = nn.ConvTranspose2d(in_channels=256, out_channels=256,
-            kernel_size=2, stride=(2,2)
+            kernel_size=2, stride=(2,2),
         )
 
         self.conv_transpose_3 = nn.ConvTranspose2d(in_channels=256, out_channels=128,
-            kernel_size=2, stride=(2,2)
+            kernel_size=2, stride=(2,2),
         )
 
         self.conv_transpose_4 = nn.ConvTranspose2d(in_channels=128, out_channels=64,
-            kernel_size=2, stride=(2,2)
+            kernel_size=2, stride=(2,2),
         )
 
         self.conv_transpose_5 = nn.ConvTranspose2d(in_channels=64, out_channels=32,
-            kernel_size=2, stride=(2,2)
+            kernel_size=2, stride=(2,2),
         )
 
     def forward(self, input):
 
         conv1 = self.conv_block_1(input)    #conv1: 32 channels
-        pool1 = self.pool_block_1(conv1)     #poo1: 64 channels
+        pool1 = self.pool_block_1(conv1)     #poo1: 32 channels
 
         conv2 = self.residual_block_1(pool1)    #conv2: 64 channels
-        pool2 = self.pool_block_2(conv2)    #pool2: 128 channels        
+        pool2 = self.pool_block_2(conv2)    #pool2: 64 channels        
 
         conv3 = self.residual_block_2(pool2)   #conv3: 128 channels
         conv3 = self.multiscale_block_1(conv3)  #conv3: 128 channels
         conv3 = self.residual_block_3(conv3)    #conv3: 128 channels    
-        pool3 = self.pool_block_3(conv3)    #pool3: 256 channels
+        pool3 = self.pool_block_3(conv3)    #pool3: 128 channels
 
         conv4 = self.residual_block_4(pool3)    #conv4: 256 channels
         pool4 = self.pool_block_4(conv4)    #pool4: 512 channels
 
         conv5 = self.residual_block_5(pool4)    #conv5: 512 channels
-        pool5 = self.pool_block_5(conv5)    #pool5: 1024  channels
+        pool5 = self.pool_block_5(conv5)    #pool5: 512  channels
 
         conv51 = self.residual_block_6(pool5) #conv51: 1024 channels
 

@@ -89,9 +89,6 @@ class OutConv(nn.Module):
 """(convolution => [BN] => ReLU/sigmoid)"""
 """No regularizer"""
 class Conv_Bn_Relu(nn.Module):
-
-
-
     def __init__(self, in_channels, out_channels=32, 
         kernelSize=(3,3), strds=(1,1),
         useBias=False, dilatationRate=(1,1), 
@@ -99,11 +96,14 @@ class Conv_Bn_Relu(nn.Module):
     ):
 
         super().__init__()
+        if isinstance(kernelSize, int):
+            kernelSize = (kernelSize, kernelSize)
+        if isinstance(strds, int):
+            strds = (strds, strds)
 
         self.conv_bn_relu = self.get_block(in_channels, out_channels, kernelSize,
             strds, useBias, dilatationRate, actv, doBatchNorm
         )
-        
 
     def forward(self, input):
         return self.conv_bn_relu(input)
@@ -118,7 +118,7 @@ class Conv_Bn_Relu(nn.Module):
         layers = []
 
         conv1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernelSize, 
-                stride=strds, dilation=dilatationRate, bias=useBias
+                stride=strds, dilation=dilatationRate, bias=useBias, padding='same', padding_mode='zeros'
             )
 
         if actv == 'selu':
@@ -223,7 +223,7 @@ class Residual_Conv(nn.Module):
             self.conv_block_1 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
                 actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=True
             )
-            self.conv_block_2 = Conv_Bn_Relu(in_channels, out_channels, kernelSize=kernelSize, strds=strds, 
+            self.conv_block_2 = Conv_Bn_Relu(out_channels, out_channels, kernelSize=kernelSize, strds=strds, 
                 actv='None', useBias=useBias, dilatationRate=dilatationRate, doBatchNorm=True
             )
 
