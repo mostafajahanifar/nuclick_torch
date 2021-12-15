@@ -6,7 +6,8 @@ class Config:
     dir='/root/workspace/nuclei_instances_datasets/NuClick/MoNuSegTrain/',
     dir_val=None, # '/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
     dir_checkpoint='./checkpoints/',
-    epochs=10,
+    network='UNet',
+    epochs=100,
     batch_size=16,
     lr=0.001,
     model_path=None,
@@ -31,6 +32,7 @@ class Config:
         self.perturb = 'distance'
         self.drop_rate = 0.5
         self.jitter_range = 3
+        self.network = network
 
 DefaultConfig = Config()
 

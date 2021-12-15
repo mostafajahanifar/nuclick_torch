@@ -5,6 +5,7 @@ from .layers import *
 class UNet(nn.Module):
     def __init__(self, n_channels, n_classes, bilinear=True):
         super(UNet, self).__init__()
+        self.net_name = 'UNet'
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
@@ -42,6 +43,7 @@ class NuClick_NN(nn.Module):
 
     def __init__(self, n_channels, n_classes):
         super().__init__()
+        self.net_name = 'NuClick'
 
         self.n_channels = n_channels
         self.n_classes = n_classes
