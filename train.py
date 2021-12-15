@@ -14,9 +14,11 @@ from tqdm import tqdm
 from data.dataset_generator import NuclickDataset
 from models.losses import dice_loss
 from evaluate import evaluate
-from models import UNet
+from models import UNet, NuClick_NN
 from config import DefaultConfig
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 def train_net(net,
               device,
@@ -58,12 +60,13 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+    experiment = wandb.init(project='NuClick', resume='allow', anonymous='must')
+    experiment.config.update(dict(network=net.net_name, epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
 
     logging.info(f'''Starting training:
+        Network:         {net.net_name}
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {learning_rate}
@@ -178,12 +181,17 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=5, n_classes=2, bilinear=True)
+    if DefaultConfig.network.lower() == 'unet':
+        net = UNet(n_channels=5, n_classes=2, bilinear=True)
+    elif DefaultConfig.network.lower() == 'nuclick':
+        net = NuClick_NN(n_channels=5, n_classes=2)
+    else:
+        raise ValueError(f'Unknown network architecture: {DefaultConfig.network}')
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
                  f'\t{net.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+                 )
 
     if args.load:
         net.load_state_dict(torch.load(args.load, map_location=device))
