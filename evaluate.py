@@ -16,8 +16,8 @@ def evaluate(net, dataloader, device):
         image, mask_true = batch['image'], batch['mask']
         # move images and labels to correct device and type
         image = image.to(device=device, dtype=torch.float32)
-        mask_true = mask_true.to(device=device, dtype=torch.long)
-        mask_true = F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float()
+        mask_true = mask_true.to(device=device, dtype=torch.float)
+        # mask_true = F.one_hot(mask_true, net.n_classes).permute(0, 3, 1, 2).float()
 
         with torch.no_grad():
             # predict the mask
@@ -25,7 +25,7 @@ def evaluate(net, dataloader, device):
 
             # convert to one-hot format
             if net.n_classes == 1:
-                mask_pred = (F.sigmoid(mask_pred) > 0.5).float()
+                mask_pred = (torch.sigmoid(mask_pred) > 0.5).float()
                 # compute the Dice score
                 dice_score += dice_coeff(mask_pred, mask_true, reduce_batch_first=False)
             else:

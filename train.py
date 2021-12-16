@@ -6,6 +6,7 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.nn.modules.loss import BCELoss
 import wandb
 from torch import optim
 from torch.utils.data import DataLoader, random_split
@@ -48,7 +49,8 @@ def train_net(net,
                                  phase='train',
                                  scale=DefaultConfig.img_scale,
                                  drop_rate=DefaultConfig.drop_rate,
-                                 jitter_range=DefaultConfig.jitter_range)
+                                 jitter_range=DefaultConfig.jitter_range,
+                                 object_weights=[1, 3])
         # Split into train / validation partitions
         n_val = int(len(dataset) * val_percent)
         n_train = len(dataset) - n_val
@@ -83,6 +85,7 @@ def train_net(net,
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     criterion = nn.CrossEntropyLoss()
+    BCELoss = nn.BCELoss()
     global_step = 0
 
     # 5. Begin training
@@ -105,10 +108,19 @@ def train_net(net,
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
-                    loss = criterion(masks_pred, true_masks) \
-                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                       multiclass=True)
+                    # loss = criterion(masks_pred, true_masks) \
+                    #        + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                    #                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                    #                    multiclass=True)
+                    # loss = criterion(masks_pred, true_masks) \
+                    #        + dice_loss(F.softmax(masks_pred, dim=1).float(),
+                    #                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
+                    #                    multiclass=True)
+                    masks_pred_ = torch.sigmoid(masks_pred)
+                    loss = nn.BCELoss(weight=batch['weights'].to(device=device, dtype=torch.float))(masks_pred_, true_masks.float()) \
+                           + dice_loss(masks_pred_.float(),
+                                       true_masks.float(),
+                                       multiclass=False)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -143,7 +155,7 @@ def train_net(net,
                 'images': wandb.Image(images[0, :3, :, :].cpu()),
                 'masks': {
                     'true': wandb.Image(true_masks[0].float().cpu()),
-                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0, 1, :, :].float().cpu()),
+                    'pred': wandb.Image(torch.sigmoid(masks_pred)[0, 0, :, :].float().cpu()),
                 },
                 'step': global_step,
                 'epoch': epoch,
@@ -182,9 +194,9 @@ if __name__ == '__main__':
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
     if DefaultConfig.network.lower() == 'unet':
-        net = UNet(n_channels=5, n_classes=2, bilinear=True)
+        net = UNet(n_channels=5, n_classes=1, bilinear=True)
     elif DefaultConfig.network.lower() == 'nuclick':
-        net = NuClick_NN(n_channels=5, n_classes=2)
+        net = NuClick_NN(n_channels=5, n_classes=1)
     else:
         raise ValueError(f'Unknown network architecture: {DefaultConfig.network}')
 
