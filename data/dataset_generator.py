@@ -11,7 +11,6 @@ from config import DefaultConfig
 from utils.guiding_signals import PointGuidingSignal
 
 
-
 class NuclickDataset(Dataset):
     '''Dataset class for NuClick
     
@@ -61,7 +60,7 @@ class NuclickDataset(Dataset):
             img_ndarray = img_ndarray / 255
 
         return img_ndarray
-       
+
 
     def __getitem__(self, idx):
         mat_file = loadmat(self.file_paths[idx])
