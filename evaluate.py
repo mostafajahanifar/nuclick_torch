@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from models.losses import multiclass_dice_coeff, dice_coeff 
+from models.dice_loss import multiclass_dice_coeff, dice_coeff 
 
 
 
