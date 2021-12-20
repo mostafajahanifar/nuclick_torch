@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from data.dataset_generator import NuclickDataset
-from models.loss_functions import Loss_Function_Factory
+from models.loss_functions import get_loss_function
 from evaluate import evaluate
 from models import UNet, NuClick_NN
 from config import DefaultConfig
@@ -83,7 +83,7 @@ def train_net(net,
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
     # Get loss function:
-    loss_function = Loss_Function_Factory(DefaultConfig.loss_type)
+    loss_function = get_loss_function(DefaultConfig.loss_type)
     global_step = 0
     
 

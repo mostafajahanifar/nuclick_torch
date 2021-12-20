@@ -5,7 +5,7 @@ from torch import Tensor
 
 
 #Returns a Loss Function instance depending on the loss type
-def Loss_Function_Factory(loss_type):
+def get_loss_function(loss_type):
 
     loss_functions = {
         "Dice": Dice_Loss,
