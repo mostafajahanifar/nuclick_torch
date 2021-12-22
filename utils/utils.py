@@ -1,6 +1,6 @@
-from logging import raiseExceptions
 import numpy as np
 import csv
+
 
 #bb = DefaultConfig.img_rows
 bb = 128 #Nucleus
@@ -70,14 +70,25 @@ def getCoordinatesFromCSV(filename):
     return clicks_x, clicks_y
 
 
+#m: height of img, n: width of img
 def getPatchs(img, clickMap, boundingBoxes, cx, cy, m, n):
+    #total = number of clicks
     total = len(boundingBoxes)
-    img = np.array([img])
-    clickMap = np.array([clickMap])
-    clickMap = clickMap[..., np.newaxis]
-    patchs = np.ndarray((total, bb, bb, 3), dtype=np.uint8)
-    nucPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
-    otherPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
+    img = np.array([img])   #img.shape=(1,3,256,256)
+    clickMap = np.array([clickMap])     #clickmap.shape=(1,256,256)
+
+    #clickMap = clickMap[..., np.newaxis]
+    clickMap = clickMap[:, np.newaxis, ...]    #clickmap.shape=(1,1,256,256)
+
+    # patchs = np.ndarray((total, bb, bb, 3), dtype=np.uint8)
+    # nucPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
+    # otherPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
+    #PyTorch - channel first
+    patchs = np.ndarray((total, 3, bb, bb), dtype=np.float64)
+    nucPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
+    otherPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
+
+    # Removing points out of image dimension (these points may have been clicked unwanted)
     cx_out = [x for x in cx if x >= n]
     cx_out_index = [cx.index(x) for x in cx_out]
 
@@ -89,16 +100,31 @@ def getPatchs(img, clickMap, boundingBoxes, cx, cy, m, n):
     cx = cx.tolist()
     cy = np.delete(cy, indexes)
     cy = cy.tolist()
+
     for i in range(len(boundingBoxes)):
         boundingBox = boundingBoxes[i]
         xStart = boundingBox[0]
         yStart = boundingBox[1]
         xEnd = boundingBox[2]
         yEnd = boundingBox[3]
-        patchs[i] = img[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
-        thisClickMap = np.zeros((1, m, n, 1), dtype=np.uint8)
-        thisClickMap[0, cy[i], cx[i], 0] = 1
+
+        #patchs[i] = img[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
+        patchs[i] = img[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+
+        #thisClickMap = np.zeros((1, m, n, 1), dtype=np.uint8)
+        #thisClickMap[0, cy[i], cx[i], 0] = 1
+        thisClickMap = np.zeros((1, 1, m, n), dtype=np.uint8)
+        thisClickMap[0, 0, cy[i], cx[i]] = 1
+
         othersClickMap = np.uint8((clickMap - thisClickMap) > 0)
-        nucPoints[i] = thisClickMap[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
-        otherPoints[i] = othersClickMap[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
-    return patchs, nucPoints, otherPoints
+
+        # nucPoints[i] = thisClickMap[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
+        # otherPoints[i] = othersClickMap[0, yStart:yEnd + 1, xStart:xEnd + 1, :]
+        nucPoints[i] = thisClickMap[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+        otherPoints[i] = othersClickMap[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+
+    # patchs: (total, 3, 128, 128)
+    # nucPoints: (total, 1, 128, 128)
+    # otherPoints: (total, 1, 128, 128)
+    return patchs, nucPoints, otherPoints   
+    
