@@ -12,15 +12,27 @@ from data.dataset_generator import BasicDataset
 from models import UNet
 from utils.visualisation import plot_img_and_mask
 from config import DefaultConfig
+from utils.utils import getCoordinatesFromCSV, getClickMapAndBoundingBox
 
 
 def predict_img(net,
                 full_img,
                 device,
+                points_csv,
                 scale_factor=1,
                 out_threshold=0.5):
     net.eval()
-    img = torch.from_numpy(BasicDataset.preprocess(full_img, scale_factor, is_mask=False))
+
+    #Get click coordinates from CSV file
+    cx, cy = getCoordinatesFromCSV(args.points_csv)
+    #Get the height and width of the image
+    imgHeight, imgWidth = full_img.size
+    #Get click map and bounding box
+    clickmap, boundingbox = getClickMapAndBoundingBox(cx, cy, imgHeight, imgWidth)
+
+    img = BasicDataset.preprocess(full_img, scale_factor, is_mask=False) #numpy array:(3,256,256)
+    
+    img = torch.from_numpy(img)
     img = img.unsqueeze(0)
     img = img.to(device=device, dtype=torch.float32)
 
@@ -51,6 +63,7 @@ def get_args():
     parser.add_argument('--model', '-m', metavar='FILE', required=True,
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='INPUT', nargs='+', help='Filenames of input images', required=True)
+    parser.add_argument('--points', '-p', metavar='PATH', help='path to a text/csv file containing point location in (x,y) format', required=True)
     parser.add_argument('--output', '-o', metavar='INPUT', nargs='+', help='Filenames of output images')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
@@ -102,6 +115,7 @@ if __name__ == '__main__':
                            full_img=img,
                            scale_factor=args.scale,
                            out_threshold=args.mask_threshold,
+                           points_csv=args.points,
                            device=device)
 
         if not args.no_save:
