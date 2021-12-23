@@ -12,7 +12,7 @@ from data.dataset_generator import BasicDataset
 from models import UNet
 from utils.visualisation import plot_img_and_mask
 from config import DefaultConfig
-from utils.utils import getCoordinatesFromCSV, getClickMapAndBoundingBox
+from utils.utils import getCoordinatesFromCSV, getClickMapAndBoundingBox, getPatchs
 
 
 def predict_img(net,
@@ -24,17 +24,22 @@ def predict_img(net,
     net.eval()
 
     #Get click coordinates from CSV file
-    cx, cy = getCoordinatesFromCSV(args.points_csv)
+    cx, cy = getCoordinatesFromCSV(points_csv)
     #Get the height and width of the image
     imgHeight, imgWidth = full_img.size
     #Get click map and bounding box
     clickmap, boundingbox = getClickMapAndBoundingBox(cx, cy, imgHeight, imgWidth)
 
-    img = BasicDataset.preprocess(full_img, scale_factor, is_mask=False) #numpy array:(3,256,256)
-    
-    img = torch.from_numpy(img)
-    img = img.unsqueeze(0)
-    img = img.to(device=device, dtype=torch.float32)
+    #Convert full_img to numpy array (3,256,256)
+    image = np.asarray(full_img) 
+    image = image[:, :, :3]
+    image = np.moveaxis(image, 2, 0)
+
+    patchs, nucPoints, otherPoints = getPatchs(image, clickmap, boundingbox, cx, cy, imgHeight, imgWidth)
+
+    # img = torch.from_numpy(img)
+    # img = img.unsqueeze(0)
+    # img = img.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
         output = net(img)
