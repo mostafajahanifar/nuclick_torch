@@ -70,9 +70,9 @@ def getCoordinatesFromCSV(filename):
     return clicks_x, clicks_y
 
 
-#m: height of img, n: width of img
+# m: height of img, n: width of img
 def getPatchs(img, clickMap, boundingBoxes, cx, cy, m, n):
-    #total = number of clicks
+    # total = number of clicks
     total = len(boundingBoxes)
     img = np.array([img])   #img.shape=(1,3,256,256)
     clickMap = np.array([clickMap])     #clickmap.shape=(1,256,256)
@@ -83,8 +83,8 @@ def getPatchs(img, clickMap, boundingBoxes, cx, cy, m, n):
     # patchs = np.ndarray((total, bb, bb, 3), dtype=np.uint8)
     # nucPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
     # otherPoints = np.ndarray((total, bb, bb, 1), dtype=np.uint8)
-    #PyTorch - channel first
-    patchs = np.ndarray((total, 3, bb, bb), dtype=np.float64)
+    # PyTorch - channel first
+    patchs = np.ndarray((total, 3, bb, bb), dtype=np.uint8)
     nucPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
     otherPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
 
