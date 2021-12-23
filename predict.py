@@ -35,11 +35,13 @@ def predict_img(net,
     image = image[:, :, :3]
     image = np.moveaxis(image, 2, 0)
 
+    #Generate patchs, inclusion and exlusion maps
     patchs, nucPoints, otherPoints = getPatchs(image, clickmap, boundingbox, cx, cy, imgHeight, imgWidth)
 
-    # img = torch.from_numpy(img)
-    # img = img.unsqueeze(0)
-    # img = img.to(device=device, dtype=torch.float32)
+    #Concatenate the maps
+    input = np.concatenate((patchs, nucPoints, otherPoints), axis=1, dtype=np.float32)
+    input = torch.from_numpy(input)
+    input.to(device=device, dtype=torch.float32)
 
     with torch.no_grad():
         output = net(img)
@@ -61,6 +63,8 @@ def predict_img(net,
         return (full_mask > out_threshold).numpy()
     else:
         return F.one_hot(full_mask.argmax(dim=0), net.n_classes).permute(2, 0, 1).numpy()
+        output = net(input) #output shape = (no.patchs, 1, 128, 128)
+        preds = torch.sigmoid(output)
 
 
 def get_args():
