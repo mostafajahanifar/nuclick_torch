@@ -12,7 +12,7 @@ from data.dataset_generator import BasicDataset
 from models import UNet
 from utils.visualisation import plot_img_and_mask
 from config import DefaultConfig
-from utils.utils import getCoordinatesFromCSV, getClickMapAndBoundingBox, getPatchs
+from utils.utils import getCoordinatesFromCSV, getClickMapAndBoundingBox, getPatchs, postProcessing
 
 
 def predict_img(net,
@@ -47,7 +47,15 @@ def predict_img(net,
 
     with torch.no_grad():
         output = net(input) #output shape = (no.patchs, 1, 128, 128)
-        preds = torch.sigmoid(output)
+        output = torch.sigmoid(output)
+        output = torch.squeeze(output, 1)   #(no.patchs, 128,128)
+        preds = output.numpy()
+
+    try:
+        mask = postProcessing(preds, thresh=0.5, minSize=10, minHole=30, doReconstruction=True, nucPoints=nucPoints)
+    except:
+        mask = postProcessing(preds, thresh=0.5, minSize=10, minHole=30, doReconstruction=False, nucPoints=nucPoints)
+       
 
         # if net.n_classes > 1:
         #     probs = F.softmax(output, dim=1)[0]
