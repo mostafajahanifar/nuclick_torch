@@ -37,6 +37,8 @@ def predict_img(net,
 
     #Generate patchs, inclusion and exlusion maps
     patchs, nucPoints, otherPoints = getPatchs(image, clickmap, boundingbox, cx, cy, imgHeight, imgWidth)
+    #Divide patchs by 255
+    patchs = patchs / 255
 
     #Concatenate the maps
     input = np.concatenate((patchs, nucPoints, otherPoints), axis=1, dtype=np.float32)
