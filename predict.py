@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -65,12 +66,12 @@ def predict_img(net,
 
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
-    
+
     parser.add_argument('--model', '-m', metavar='PATH', required=True,
                         help='Specify the file in which the model is stored')
     parser.add_argument('--input', '-i', metavar='PATH', nargs='+', help='Path to the input images', required=True)
     parser.add_argument('--points', '-p', metavar='PATH', nargs='+', help='Path to CSV files containing point location in x,y format', required=True)
-    #parser.add_argument('--output', '-o', metavar='PATH', nargs='+', help='Filenames of output images')
+    parser.add_argument('--output', '-o', metavar='PATH', help='Directory where the instance maps will be saved into')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
     parser.add_argument('--no-save', '-n', action='store_true', help='Do not save the output masks')
@@ -83,9 +84,16 @@ def get_args():
 
 
 #Generate an output name
-def get_output_filename(fn):
-    split = os.path.splitext(fn)
-    return f'{split[0]}_OUT{split[1]}'
+def get_output_filename(fn, outDir):
+    if outDir is None:
+        split = os.path.splitext(fn)
+        return f'{split[0]}_OUT{split[1]}'
+    else:
+        path = Path(fn)
+        filename = path.stem
+        ext = path.suffix
+        return f'{outDir}/{filename}_OUT{ext}'
+
 
 
 #Generate a list of tuples (path to image, path to points) from args
@@ -132,9 +140,9 @@ if __name__ == '__main__':
 
         if not args.no_save:
             #Save instance map
-            out_filename = get_output_filename(imagePath)
+            out_filename = get_output_filename(imagePath, args.output)
             Image.fromarray((instanceMap * 255).astype(np.uint8)).save(out_filename)
-            logging.info(f'Instance map saved')
+            logging.info(f'Instance map saved as {out_filename}')
 
         if args.viz:
             #Visualise instance map
