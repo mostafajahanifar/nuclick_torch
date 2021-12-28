@@ -69,8 +69,17 @@ def get_args():
 
     parser.add_argument('--model', '-m', metavar='PATH', required=True,
                         help='Specify the file in which the model is stored')
-    parser.add_argument('--input', '-i', metavar='PATH', nargs='+', help='Path to the input images', required=True)
-    parser.add_argument('--points', '-p', metavar='PATH', nargs='+', help='Path to CSV files containing point location in x,y format', required=True)
+    #parser.add_argument('--input', '-i', metavar='PATH', nargs='+', help='Path to the input images', required=True)
+    #parser.add_argument('--points', '-p', metavar='PATH', nargs='+', help='Path to CSV files containing point location in x,y format', required=True)
+    imageGroup = parser.add_mutually_exclusive_group(required=True)
+    imageGroup.add_argument('--image', '-i', metavar='PATH', nargs='+', help='Path to the input images')
+    imageGroup.add_argument('-imageDir', metavar='PATH', help='Path to the directory containing input images')
+
+    pointsGroup = parser.add_mutually_exclusive_group(required=True)
+    pointsGroup.add_argument('--points', '-p', metavar='PATH', nargs='+', help='Path to CSV files containing points')
+    pointsGroup.add_argument('-pointsDir', metavar='PATH', help='Path to the directory containing the CSV files')
+    
+    
     parser.add_argument('--output', '-o', metavar='PATH', help='Directory where the instance maps will be saved into')
     parser.add_argument('--viz', '-v', action='store_true',
                         help='Visualize the images as they are processed')
@@ -98,13 +107,35 @@ def get_output_filename(fn, outDir):
 
 #Generate a list of tuples (path to image, path to points) from args
 def get_images_points(args):
+    images = []
+    points = []
     images_points = []
-    if len(args.input) != len(args.points):
-        raise ValueError("Images and points do not match")
+
+    #If image names are provided:
+    if (args.imageDir is None):
+        images = args.image
+    #Else if a directory is provided:
     else:
-        for i in range(len(args.input)):
-            entry = (args.input[i], args.points[i])
-            images_points.append(entry)
+        for fn in os.listdir(args.imageDir):
+            if os.path.splitext(fn)[1] == '.png':
+                images.append(f'{args.imageDir}/{fn}')
+        images.sort()
+
+    if (args.pointsDir is None):
+        points = args.points
+    else:
+        for fn in os.listdir(args.pointsDir):
+            if os.path.splitext(fn)[1] == '.csv':
+                points.append(f'{args.pointsDir}/{fn}')
+        points.sort()
+
+    
+    if (len(images) != len(points)):
+        raise ValueError("Images and points do not match")
+
+    for i in range(len(images)):
+        images_points.append((images[i], points[i]))
+
     return images_points
 
 
