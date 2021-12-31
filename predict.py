@@ -19,6 +19,8 @@ from utils.process import post_processing, gen_instance_map
 from utils.misc import get_coords_from_csv, get_clickmap_boundingbox, get_output_filename, get_images_points
 from utils.guiding_signals import get_patches_and_signals
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 def predict_img(net,
                 full_img,
@@ -47,17 +49,17 @@ def predict_img(net,
     #Concatenate input to model
     input = np.concatenate((patchs, nucPoints, otherPoints), axis=1, dtype=np.float32)
     input = torch.from_numpy(input)
-    input.to(device=device, dtype=torch.float32)
+    input = input.to(device=device, dtype=torch.float32)
 
     #Predict
     with torch.no_grad():
         output = net(input) #(no.patchs, 1, 128, 128)
         output = torch.sigmoid(output)
         output = torch.squeeze(output, 1)   #(no.patchs, 128, 128)
-        preds = output.numpy()
+        preds = output.cpu().numpy()
 
 
-    masks = post_processing(preds, thresh=0.5, minSize=10, minHole=30, doReconstruction=True, nucPoints=nucPoints)
+    masks = post_processing(preds, thresh=out_threshold, minSize=10, minHole=30, doReconstruction=True, nucPoints=nucPoints)
     
     #Generate instanceMap
     instanceMap = gen_instance_map(masks, boundingBoxes, imgHeight, imgWidth)
