@@ -69,7 +69,7 @@ def predict_img(net,
 def get_args():
     parser = argparse.ArgumentParser(description='Predict masks from input images')
 
-    parser.add_argument('--model', '-m', metavar='NAME', required=True, choices=['NuClick', 'UNet'], help='Name of the model')
+    parser.add_argument('--model', '-m', metavar='NAME', required=True, help='Name of the model')
     parser.add_argument('--pretrained_weights', '-w', metavar='PATH', required=True,
                         help='Path to the pretrained weights')
     
@@ -98,10 +98,12 @@ if __name__ == '__main__':
     args = get_args()
     images_points = get_images_points(args)
 
-    if (args.model == 'NuClick'):
+    if (args.model.lower() == 'nuclick'):
         net = NuClick_NN(n_channels=5, n_classes=1)
-    elif (args.model == 'UNet'):
+    elif (args.model.lower() == 'unet'):
         net = UNet(n_channels=5, n_classes=1)
+    else:
+        raise ValueError('Invalid model type. Acceptable networks are UNet or NuClick')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Loading model {args.model}')
