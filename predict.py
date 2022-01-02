@@ -131,8 +131,7 @@ if __name__ == '__main__':
         if not args.no_save:
             #Save instance map
             out_filename = get_output_filename(imagePath, args.output)
-            
-            instanceMap = cv2.cvtColor(instanceMap, cv2.COLOR_RGB2BGR)
+
             cv2.imwrite(out_filename, instanceMap)
             logging.info(f'Instance map saved as {out_filename}')
 
