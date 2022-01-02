@@ -2,6 +2,10 @@ import warnings
 import numpy as np
 import cv2
 from utils.mask_operations import adaptive_distance_thresholding
+from config import DefaultConfig
+
+bb = DefaultConfig.patch_size    #128 for nucleus
+
 
 class GuidingSignal(object):
     '''A generic class for defining guiding signal generators.
@@ -104,3 +108,46 @@ class PointGuidingSignal(GuidingSignal):
         centroids[:, 0] = np.clip(centroids[:, 0], 0, shape[1]-1)
         centroids[:, 1] = np.clip(centroids[:, 1], 0, shape[0]-1)
         return centroids
+
+
+#Returns patchs, nucPoints, otherPoints
+# m: height of img, n: width of img
+def get_patches_and_signals(img, clickMap, boundingBoxes, cx, cy, m, n):
+    # total = number of clicks
+    total = len(boundingBoxes)
+    img = np.array([img])   #img.shape=(1,3,m,n)
+    clickMap = np.array([clickMap])     #clickmap.shape=(1,m,n)    
+    clickMap = clickMap[:, np.newaxis, ...]    #clickmap.shape=(1,1,m,n)
+
+    patchs = np.ndarray((total, 3, bb, bb), dtype=np.uint8)
+    nucPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
+    otherPoints = np.ndarray((total, 1, bb, bb), dtype=np.uint8)
+
+    # Removing points out of image dimension (these points may have been clicked unwanted)
+    x_del_indices = set([i for i in range(len(cx)) if cx[i]>=n or cx[i]<0])
+    y_del_indices = set([i for i in range(len(cy)) if cy[i]>=m or cy[i]<0])
+    del_indices = list(x_del_indices.union(y_del_indices))
+    cx = np.delete(cx, del_indices)
+    cy = np.delete(cy, del_indices)
+
+    for i in range(len(boundingBoxes)):
+        boundingBox = boundingBoxes[i]
+        xStart = boundingBox[0]
+        yStart = boundingBox[1]
+        xEnd = boundingBox[2]
+        yEnd = boundingBox[3]
+
+        patchs[i] = img[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+
+        thisClickMap = np.zeros((1, 1, m, n), dtype=np.uint8)
+        thisClickMap[0, 0, cy[i], cx[i]] = 1
+
+        othersClickMap = np.uint8((clickMap - thisClickMap) > 0)
+
+        nucPoints[i] = thisClickMap[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+        otherPoints[i] = othersClickMap[0, :, yStart:yEnd + 1, xStart:xEnd + 1]
+
+    # patchs: (total, 3, m, n)
+    # nucPoints: (total, 1, m, n)
+    # otherPoints: (total, 1, m, n)
+    return patchs, nucPoints, otherPoints   

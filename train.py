@@ -1,6 +1,6 @@
 import argparse
 import logging
-import sys
+import sys, os
 from pathlib import Path
 
 import torch
@@ -14,9 +14,6 @@ from models.loss_functions import get_loss_function
 from evaluate import evaluate
 from models import UNet, NuClick_NN
 from config import DefaultConfig
-
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 def train_net(net,
               device,
@@ -174,11 +171,16 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=DefaultConfig.val_percent,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=DefaultConfig.use_amp, help='Use mixed precision')
+    parser.add_argument('--gpu', '-g', metavar='GPU', default=None, help='ID of GPUs to use (based on `nvidia-smi`)')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = get_args()
+    
+    # setting gpus
+    if args.gpu is not None:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
