@@ -1,20 +1,15 @@
 import argparse
 import logging
 import os
-from pathlib import Path
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 import cv2
 from PIL import Image
-from torchvision import transforms
 from skimage.color import label2rgb
 import matplotlib.pyplot as plt
 
-from data.dataset_generator import BasicDataset
 from models import UNet, NuClick_NN
-from utils.visualisation import plot_img_and_mask
 from config import DefaultConfig
 from utils.process import post_processing, gen_instance_map
 from utils.misc import get_coords_from_csv, get_clickmap_boundingbox, get_output_filename, get_images_points
