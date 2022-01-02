@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import torch
 import torch.nn.functional as F
+import cv2
 from PIL import Image
 from torchvision import transforms
 from skimage.color import label2rgb
@@ -130,7 +131,9 @@ if __name__ == '__main__':
         if not args.no_save:
             #Save instance map
             out_filename = get_output_filename(imagePath, args.output)
-            Image.fromarray((instanceMap * 255).astype(np.uint8)).save(out_filename)
+            
+            instanceMap = cv2.cvtColor(instanceMap, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(out_filename, instanceMap)
             logging.info(f'Instance map saved as {out_filename}')
 
         if args.viz:
