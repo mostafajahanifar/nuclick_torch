@@ -18,7 +18,7 @@ class NuclickDataset(Dataset):
     extracted for NuClick model training (using `data.patch_extraction` module).
     '''
 
-    def __init__(self, patch_dir: str, phase: str = 'train', scale: float = None, drop_rate: float = 0, jitter_range: int = 3):
+    def __init__(self, patch_dir: str, phase: str = 'train', scale: float = None, drop_rate: float = 0, jitter_range: int = 3, object_weights=None):
         self.patch_dir = Path(patch_dir)
         if phase.lower() not in {'train', 'validation', 'val', 'test'}:
             raise ValueError(f'Invalid running phase of: {patch_dir}. Phase should be `"train"`, `"validation"`, or `"test"`.')
@@ -26,6 +26,7 @@ class NuclickDataset(Dataset):
         self.scale = scale
         self.drop_rate = drop_rate
         self.jitter_range = jitter_range
+        self.object_weights = object_weights
 
         self.file_paths = list(self.patch_dir.glob('*.mat'))
         if len(self.file_paths)==0:
@@ -77,9 +78,24 @@ class NuclickDataset(Dataset):
         inc_signal = signal_gen.inclusion_map()
         exc_signal = signal_gen.exclusion_map(random_drop=self.drop_rate, random_jitter=self.jitter_range)
 
+        # Create input and weight maps
         input = np.concatenate((img, inc_signal[np.newaxis, ...], exc_signal[np.newaxis, ...]), axis=0)
+        if self.object_weights is not None:
+            if len(self.object_weights)==2:
+                weight_map = 1 + self.object_weights[0]*np.float32(mask) + self.object_weights[1]*np.float32(others>0)
+                output_dict = {
+                               'image': torch.as_tensor(input.copy()).float().contiguous(),
+                               'mask': torch.as_tensor(mask[np.newaxis, ...].copy()).long().contiguous(),
+                               'weights': torch.as_tensor(weight_map[np.newaxis, ...].copy()).long().contiguous(),
+                              }
+            else:
+                raise ValueError('object_weights should be a list or tuple in this format: '
+                                 '(Desired_Object_Weight, Other_Objects_Weight)')
+        else:
+            output_dict =  {
+                            'image': torch.as_tensor(input.copy()).float().contiguous(),
+                            'mask': torch.as_tensor(mask[np.newaxis, ...].copy()).long().contiguous(),
+                            'weights': None
+                            }
 
-        return {
-            'image': torch.as_tensor(input.copy()).float().contiguous(),
-            'mask': torch.as_tensor(mask.copy()).long().contiguous(),
-        }
+        return output_dict

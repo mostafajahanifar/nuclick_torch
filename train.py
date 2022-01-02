@@ -1,22 +1,19 @@
 import argparse
 import logging
-import sys
+import sys, os
 from pathlib import Path
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import wandb
 from torch import optim
 from torch.utils.data import DataLoader, random_split
 from tqdm import tqdm
 
 from data.dataset_generator import NuclickDataset
-from models.losses import dice_loss
+from models.loss_functions import get_loss_function
 from evaluate import evaluate
-from models import UNet
+from models import UNet, NuClick_NN
 from config import DefaultConfig
-
 
 def train_net(net,
               device,
@@ -46,7 +43,8 @@ def train_net(net,
                                  phase='train',
                                  scale=DefaultConfig.img_scale,
                                  drop_rate=DefaultConfig.drop_rate,
-                                 jitter_range=DefaultConfig.jitter_range)
+                                 jitter_range=DefaultConfig.jitter_range,
+                                 object_weights=[1, 3])
         # Split into train / validation partitions
         n_val = int(len(dataset) * val_percent)
         n_train = len(dataset) - n_val
@@ -58,17 +56,19 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+    experiment = wandb.init(project='NuClick', resume='allow', anonymous='must')
+    experiment.config.update(dict(network=net.net_name, epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
                                   val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
                                   amp=amp))
 
     logging.info(f'''Starting training:
+        Network:         {net.net_name}
         Epochs:          {epochs}
         Batch size:      {batch_size}
         Learning rate:   {learning_rate}
         Training size:   {n_train}
         Validation size: {n_val}
+        Loss function:   {DefaultConfig.loss_type}
         Checkpoints:     {save_checkpoint}
         Device:          {device.type}
         Images scaling:  {img_scale}
@@ -79,8 +79,11 @@ def train_net(net,
     optimizer = optim.RMSprop(net.parameters(), lr=learning_rate, weight_decay=1e-8, momentum=0.9)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'max', patience=2)  # goal: maximize Dice score
     grad_scaler = torch.cuda.amp.GradScaler(enabled=amp)
-    criterion = nn.CrossEntropyLoss()
+    # Get loss function:
+    loss_function = get_loss_function(DefaultConfig.loss_type)
     global_step = 0
+    
+
 
     # 5. Begin training
     for epoch in range(epochs):
@@ -102,10 +105,13 @@ def train_net(net,
 
                 with torch.cuda.amp.autocast(enabled=amp):
                     masks_pred = net(images)
-                    loss = criterion(masks_pred, true_masks) \
-                           + dice_loss(F.softmax(masks_pred, dim=1).float(),
-                                       F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),
-                                       multiclass=True)
+                    masks_pred_ = torch.sigmoid(masks_pred)
+
+                    if loss_function.use_weight() == True:
+                        weight = batch['weights'].to(device=device, dtype=torch.float)
+                        loss = loss_function.compute_loss(masks_pred_, true_masks, weight)
+                    else:
+                        loss = loss_function.compute_loss(masks_pred_, true_masks)
 
                 optimizer.zero_grad(set_to_none=True)
                 grad_scaler.scale(loss).backward()
@@ -140,7 +146,7 @@ def train_net(net,
                 'images': wandb.Image(images[0, :3, :, :].cpu()),
                 'masks': {
                     'true': wandb.Image(true_masks[0].float().cpu()),
-                    'pred': wandb.Image(torch.softmax(masks_pred, dim=1)[0, 1, :, :].float().cpu()),
+                    'pred': wandb.Image(torch.sigmoid(masks_pred)[0, 0, :, :].float().cpu()),
                 },
                 'step': global_step,
                 'epoch': epoch,
@@ -165,11 +171,16 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=DefaultConfig.val_percent,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=DefaultConfig.use_amp, help='Use mixed precision')
+    parser.add_argument('--gpu', '-g', metavar='GPU', default=None, help='ID of GPUs to use (based on `nvidia-smi`)')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = get_args()
+    
+    # setting gpus
+    if args.gpu is not None:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -178,12 +189,17 @@ if __name__ == '__main__':
     # Change here to adapt to your data
     # n_channels=3 for RGB images
     # n_classes is the number of probabilities you want to get per pixel
-    net = UNet(n_channels=5, n_classes=2, bilinear=True)
+    if DefaultConfig.network.lower() == 'unet':
+        net = UNet(n_channels=5, n_classes=1, bilinear=True)
+    elif DefaultConfig.network.lower() == 'nuclick':
+        net = NuClick_NN(n_channels=5, n_classes=1)
+    else:
+        raise ValueError(f'Unknown network architecture: {DefaultConfig.network}')
 
     logging.info(f'Network:\n'
                  f'\t{net.n_channels} input channels\n'
                  f'\t{net.n_classes} output channels (classes)\n'
-                 f'\t{"Bilinear" if net.bilinear else "Transposed conv"} upscaling')
+                 )
 
     if args.load:
         net.load_state_dict(torch.load(args.load, map_location=device))
