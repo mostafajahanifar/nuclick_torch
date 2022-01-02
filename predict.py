@@ -20,9 +20,6 @@ from utils.process import post_processing, gen_instance_map
 from utils.misc import get_coords_from_csv, get_clickmap_boundingbox, get_output_filename, get_images_points
 from utils.guiding_signals import get_patches_and_signals
 
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-
 def predict_img(net,
                 full_img,
                 device,
@@ -90,6 +87,7 @@ def get_args():
                         help='Minimum probability value to consider a mask pixel white')
     parser.add_argument('--scale', '-s', type=float, default=DefaultConfig.img_scale,
                         help='Scale factor for the input images')
+    parser.add_argument('--gpu', '-g', metavar='GPU', default=None, help='ID of GPUs to use (based on `nvidia-smi`)')
 
     return parser.parse_args()
 
@@ -97,6 +95,14 @@ def get_args():
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     args = get_args()
+    
+    # setting gpus
+    if args.gpu is not None:
+        os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
+        print(args.gpu)
+        print(type(args.gpu))
+    
+    # getting images and points
     images_points = get_images_points(args)
 
     if (args.model.lower() == 'nuclick'):
