@@ -2,6 +2,7 @@ import argparse
 import logging
 import sys, os
 from pathlib import Path
+from typing import DefaultDict
 
 import torch
 import wandb
@@ -30,13 +31,17 @@ def train_net(net,
                                    phase='train',
                                    scale=DefaultConfig.img_scale,
                                    drop_rate=DefaultConfig.drop_rate,
-                                   jitter_range=DefaultConfig.jitter_range)
+                                   jitter_range=DefaultConfig.jitter_range,
+                                   object_weights=[1, 3],
+                                   augment=True)
         n_train = len(train_set)
         val_set = NuclickDataset(DefaultConfig.dir_val,
                                    phase='validation',
                                    scale=DefaultConfig.img_scale,
                                    drop_rate=0,
-                                   jitter_range=0)
+                                   jitter_range=0,
+                                   object_weights=[1, 3],
+                                   augment=False)
         n_val = len(val_set)
     else: # create the validation set as a (randomly selected) percentage of training set
         dataset = NuclickDataset(DefaultConfig.dir,
@@ -51,7 +56,7 @@ def train_net(net,
         train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(DefaultConfig.seed))
 
     # 3. Create data loaders
-    loader_args = dict(batch_size=batch_size, num_workers=4, pin_memory=True)
+    loader_args = dict(batch_size=batch_size, num_workers=8, pin_memory=True)
     train_loader = DataLoader(train_set, shuffle=True, **loader_args)
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
@@ -171,7 +176,7 @@ def get_args():
     parser.add_argument('--validation', '-v', dest='val', type=float, default=DefaultConfig.val_percent,
                         help='Percent of the data that is used as validation (0-100)')
     parser.add_argument('--amp', action='store_true', default=DefaultConfig.use_amp, help='Use mixed precision')
-    parser.add_argument('--gpu', '-g', metavar='GPU', default=None, help='ID of GPUs to use (based on `nvidia-smi`)')
+    parser.add_argument('--gpu', '-g', metavar='GPU', default=DefaultConfig.gpu, help='ID of GPUs to use (based on `nvidia-smi`)')
     return parser.parse_args()
 
 
