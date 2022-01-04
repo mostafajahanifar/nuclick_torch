@@ -3,18 +3,19 @@ from pathlib import Path
 class Config:
     def __init__(self,
     seed=0,
-    dir='/root/workspace/nuclei_instances_datasets/NuClick/MoNuSegTrain/',
-    dir_val=None, # '/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
+    dir='/root/workspace/nuclei_instances_datasets/NuClick/Train/mat_files/',
+    dir_val='/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/', # '/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
     dir_checkpoint='./checkpoints/',
     network='UNet',
     epochs=100,
-    batch_size=16,
+    batch_size=64,
     lr=0.001,
     model_path=None,
     img_scale=1,
     val_percent=20,
     use_amp=False,
     loss_type='Weighted_BCE_Dice',   #Options: {'Dice', 'BCE', 'Weighted_BCE', 'BCE_DICE', 'Weighted_BCE_Dice'}
+    gpu='0',
     mask_thresh=0.5) -> None:
         self.seed = seed
         self.dir = Path(dir)
@@ -35,6 +36,7 @@ class Config:
         self.drop_rate = 0.5
         self.jitter_range = 3
         self.network = network
+        self.gpu = gpu
 
 DefaultConfig = Config()
 

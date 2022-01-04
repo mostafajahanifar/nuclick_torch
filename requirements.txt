@@ -8,3 +8,5 @@ wandb
 opencv-contrib-python
 scikit-image
 scipy
+albumentations
+tiatoolbox
