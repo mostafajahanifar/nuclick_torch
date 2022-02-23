@@ -30,7 +30,7 @@ We release pretrained model weights for two different network architectures impl
 Having the pretrained weights downloaded, you can call the `predict.py` CLI and provide it with paths to input image, point set, and expected output:
 
 ```consol
-> python predict.py --model nuclick -w "checkpoints/NuClick_Nuclick_40xAll.pth" -i input_image.png -p input_points.csv -o output_results.png
+> python predict.py --model nuclick -w "checkpoints/NuClick_Nuclick_40xAll.pth" -i input_image.png -p input_points.csv -o "path/to/save/output/"
 ```
 where the `input_points.csv` should be a list of point coordinates in `(x,y)` format (without header).
 
