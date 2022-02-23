@@ -5,8 +5,8 @@ torch
 torchvision
 tqdm
 wandb
+opencv-python
 opencv-contrib-python
 scikit-image
 scipy
 albumentations
-tiatoolbox
