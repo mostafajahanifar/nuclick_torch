@@ -24,7 +24,7 @@ First, please install PyTorch based on official guidelines [here](https://pytorc
 
 We release pretrained model weights for two different network architectures implemented in this repository. Both architectures use the sample principle for insteractive segmentation. You can download these weights using the following links.
 
-- [NuClick architecture](https://drive.google.com/file/d/1JBK3vWsVC4DxbcStukwnKNZm-vCSLdOb/view?usp=sharing): The original NuClick architecture introduced in the paper.
+- [NuClick architecture](https://drive.google.com/file/d/1JBK3vWsVC4DxbcStukwnKNZm-vCSLdOb/view?usp=sharing): The original NuClick architecture introduced in the [paper](https://arxiv.org/abs/2005.14511).
 - [UNet architecture](https://drive.google.com/file/d/1d_ypVYTsXoMrTVJaEfVRGS5CfLkxyViK/view?usp=sharing): An imporoved UNet model trained for interactive segmentation.
 
 Having the pretrained weights downloaded, you can call the `predict.py` CLI and provide it with paths to input image, point set, and expected output:
