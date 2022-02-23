@@ -191,9 +191,6 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
-    # Change here to adapt to your data
-    # n_channels=3 for RGB images
-    # n_classes is the number of probabilities you want to get per pixel
     if DefaultConfig.network.lower() == 'unet':
         net = UNet(n_channels=5, n_classes=1, bilinear=True)
     elif DefaultConfig.network.lower() == 'nuclick':

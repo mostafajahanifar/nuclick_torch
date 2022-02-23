@@ -5,19 +5,6 @@ from data.patch_extractor import patch_extract_save
 from tqdm import tqdm
 from multiprocessing import Pool, freeze_support, RLock
 
-# defining the paths
-main_path = '/root/user-temp_mostafa-tia/nuclei_instances_database/'
-main_save_train_path = '/root/workspace/nuclei_instances_datasets/NuClick/Train/'
-main_save_val_path = '/root/workspace/nuclei_instances_datasets/NuClick/Validation/'
-mat_save_path = main_save_train_path + 'mat_files/'
-mat_save_path_val = main_save_val_path + 'mat_files/'
-os.makedirs(mat_save_path, exist_ok=True)
-os.makedirs(mat_save_path_val, exist_ok=True)
-
-datasets = {'Colon_Nuclei': '.png', 'CoNSeP': '.png', 'cpm15': '.png', 'cpm17': '.png', 'CRYONUSEG': '.tif', 'Janowczyk': '.tif', 'monusac': '.tif', 'MoNuSeg': '.tif', 'PanNuke': '.png', 'tnbc': '.png'}
-sets = {'Train', 'Test', 'Fold 1', 'Fold 2', 'Fold 3'}
-val_percents = {'Colon_Nuclei': 0.03, 'CoNSeP': 0.1, 'cpm15': 0.5, 'cpm17': 0, 'CRYONUSEG': 0.1, 'Janowczyk': 0.3, 'monusac': 0.1, 'MoNuSeg': 0.1, 'PanNuke': 0, 'tnbc': 0}
-
 if __name__ == "__main__":
     '''Extracting NuClick patches for a single folder
     
@@ -27,9 +14,9 @@ if __name__ == "__main__":
     imgExt = '.tif'
     maskExt = '_mask.png'
 
-    imgPath = '/root/user-temp_mostafa-tia/nuclei_instances_database/MoNuSeg/Train/images/'
-    maskPath = '/root/user-temp_mostafa-tia/nuclei_instances_database/MoNuSeg/Train/masks/'
-    mat_save_path = '/root/workspace/nuclei_instances_datasets/NuClick/MoNuSegTrain/'
+    imgPath = '/path/to/training/images/'
+    maskPath = '/path/to/training/masks/'
+    mat_save_path = '/path/to/SAVE/nuclick_patches/'
     os.makedirs(mat_save_path, exist_ok=True)
 
     # Finding image and paths and creating saveing paths accordingly
@@ -40,7 +27,7 @@ if __name__ == "__main__":
       
     # Instantiating multiprocessing for this folder
     freeze_support() # For Windows support
-    num_processes = 8
+    num_processes = 1 # number of processing cores
     num_jobs = len(imgsPaths)
     pbar = tqdm(total=num_jobs, ascii=True)
     def update_pbar(*xx):
