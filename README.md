@@ -1,9 +1,9 @@
 # NuClick (pytorch implementation)
 Pytorch implementation of NuClick for interactive cell segmentation.
 
-![img1]("docs/11.gif")
-![img1]("docs/33.gif")
-![img1]("docs/Picture2.gif")
+![nuclick](docs/11.gif)
+![nuclick](docs/33.gif)
+![nuclick](docs/22.gif)
 
 "NuClick is a CNN-based approach to speed up collecting annotations for microscopic objects requiring minimum interaction from the annotator."
 
@@ -54,7 +54,7 @@ NuClick uses special form of data for training. Each patch should accompany "inc
 ### 2- Configure the training
 Before start training the process, you need to set some parameters. These parameters can be set in the `config.py` file or alternatively you can pass them as CLI arguments when calling the `train.py` function. You can find the explanations of these parameters in `config.py` init function.
 
-## Training
+### 3- Train the model
 Simply call the `train.py` function to start training based on the configurations you set in `config.py`:
 
 ```console
