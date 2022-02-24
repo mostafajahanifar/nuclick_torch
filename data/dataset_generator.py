@@ -9,7 +9,6 @@ from scipy.io import loadmat
 from config import DefaultConfig
 import albumentations as alb
 from albumentations.pytorch import ToTensorV2
-from tiatoolbox.tools.stainaugment import StainAugmentor
 
 from utils.guiding_signals import PointGuidingSignal
 
@@ -42,7 +41,6 @@ class NuclickDataset(Dataset):
                                  [0.17669817, 0.92528011, 0.33561059]])
         self.train_augs = alb.Compose([
             alb.OneOf([
-                StainAugmentor("macenko", stain_matrix=stain_matrix, sigma1=0.4, sigma2=0.2, augment_background=False, p=0.75),
                 alb.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=(-30,20), val_shift_limit=0, always_apply=False, p=0.75),#.8
                 alb.RGBShift(r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.75), #.7
                 ],

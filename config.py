@@ -3,20 +3,21 @@ from pathlib import Path
 class Config:
     def __init__(self,
     seed=0,
-    dir='/root/workspace/nuclei_instances_datasets/NuClick/Train/mat_files/',
-    dir_val='/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/', # '/root/workspace/nuclei_instances_datasets/NuClick/Validation/mat_files/',
-    dir_checkpoint='./checkpoints/',
-    network='UNet',
-    epochs=100,
-    batch_size=64,
-    lr=0.001,
-    model_path=None,
-    img_scale=1,
-    val_percent=20,
-    use_amp=False,
-    loss_type='Weighted_BCE_Dice',   #Options: {'Dice', 'BCE', 'Weighted_BCE', 'BCE_DICE', 'Weighted_BCE_Dice'}
-    gpu='0',
-    mask_thresh=0.5) -> None:
+    dir='/path/to/nuclick_patches/', #these patches should be generated using "patch_extraction_single.py"
+    dir_val=None, # alternatively, you can set a path to validation patches
+    dir_checkpoint='./checkpoints/', # path to save checkpoints during the training
+    network='UNet', # type of network architecture
+    epochs=100, # number of training epochs
+    batch_size=64, # batch size for training
+    lr=0.001, # learning rate for training
+    model_path=None, # path to pretrained weights to resume training
+    img_scale=1, # scale to resize image for training
+    val_percent=20, # Percentage if validation patches randomly selected from training set
+    use_amp=False, # if you want to use half-precision
+    loss_type='Weighted_BCE_Dice',  # type of loss function used for training Options: {'Dice', 'BCE', 'Weighted_BCE', 'BCE_DICE', 'Weighted_BCE_Dice'}
+    gpu='0', # ID of GPU on you machine to be used for training
+    mask_thresh=0.5 # binarization threshold used for post-processing the raw predictions
+    ) -> None:
         self.seed = seed
         self.dir = Path(dir)
         self.dir_val = Path(dir_val) if dir_val is not None else None
