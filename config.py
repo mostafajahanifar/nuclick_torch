@@ -39,5 +39,22 @@ class Config:
         self.network = network
         self.gpu = gpu
 
+
+class TestConfig:
+    def __init__(self,
+    application = 'Nucleus',
+    weights_path = "/Users/jlv/Documents/GitHub/storage/weights.pth",
+    network = "NuClick",
+    threshold = 0.5
+    ) -> None:
+        self.application = application
+        self.network = network
+        self.weights_path = weights_path,
+        self.threshold = threshold
+
+
+
+DemoConfig = TestConfig()
+
 DefaultConfig = Config()
 
