@@ -129,7 +129,7 @@ def readImageAndGetClicks(currdir=os.getcwd()):
         #        global refPt
         if event == cv2.EVENT_LBUTTONUP:
             refPt.append((x, y))
-            cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
+            cv2.circle(image, (x, y), 3, (0, 255, 0), -1)
             cv2.imshow(window_name, image)
 
     # load the image, clone it, and setup the mouse callback function

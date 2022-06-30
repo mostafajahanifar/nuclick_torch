@@ -45,6 +45,13 @@ You only need to make sure that for each image in the `imgdir` exists a point se
 To see all the options you have with `predict.py` function, simply run:
 `python predict.py -h`
 
+## Simple Demo GUI
+We have added a simple GUI in order to test NuClick performance on single test images interactively. This can be useful when you don't have the point positions and want to segment some nuclei from image quickly. To run the demo GUI, simply call:
+```
+python demo.py
+```
+This will open a file browser where you can select your desired image. After that, a simple UI is shown where you can click inside the nuclear instances. Click as close to the centroid of the nucleus as possible and if you made a mistake, you can restart the click points by presseing `R` on keyboard. When you are happy with your clicks, just press `C` on keyboard so UI knows that clicking is completed and process the image using NuClick.The output instance map will be shown on screen and saved in the same directory as the original image.
+
 ## Train NuClick on your data
 If you like to fine-tune the already provided NuClick models on your own dataset to improve its performance on new unseen data (in case you have a few number of samples manually segmented), or even if you like to train a new architecture in the interactive segmentation framework, you can follow these steps:
 
