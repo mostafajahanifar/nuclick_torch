@@ -46,7 +46,7 @@ To see all the options you have with `predict.py` function, simply run:
 `python predict.py -h`
 
 ## Simple Demo GUI
-We have added a simple GUI in order to test NuClick performance on single test images interactively. This can be useful when you don't have the point positions and want to segment some nuclei from image quickly. To run the demo GUI, simply call:
+We have added a simple GUI in order to test NuClick performance on single test images interactively. This can be useful when you don't have the point positions and want to segment some nuclei from image quickly. First, make sure you have configured the right path to saved weights in the `TestConfig` class from `config.py` module. Then, to run the demo GUI, simply call:
 ```
 python demo.py
 ```
