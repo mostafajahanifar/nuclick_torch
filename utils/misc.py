@@ -3,6 +3,9 @@ import csv
 from config import DefaultConfig
 import os
 from pathlib import Path
+import cv2
+import tkinter
+from tkinter import filedialog
 
 bb = DefaultConfig.patch_size    #128 for nucleus
 
@@ -116,5 +119,49 @@ def get_images_points(args):
         images_points.append((images[i], points[i]))
 
     return images_points
+
+
+def readImageAndGetClicks(currdir=os.getcwd()):
+    refPt = []
+    window_name = 'R: restart the clicks | C: process clicks using NuClick' # "image"
+
+    def getClickPosition(event, x, y, flags, param):
+        #        global refPt
+        if event == cv2.EVENT_LBUTTONUP:
+            refPt.append((x, y))
+            cv2.circle(image, (x, y), 3, (0, 255, 0), -1)
+            cv2.imshow(window_name, image)
+
+    # load the image, clone it, and setup the mouse callback function
+    root = tkinter.Tk()
+    root.withdraw()  # use to hide tkinter window
+    root.wm_attributes('-topmost', 1)
+    imgPath = filedialog.askopenfilename(
+        filetypes=(("PNG", "*.png"), ("JPG", "*.jpg"), ("BMP", "*.bmp"), ("TIF", "*.tif"), ("All files", "*")),
+        parent=root, initialdir=currdir, title='Please select an image')
+    image = cv2.imread(imgPath)
+    #    image = rescale(image,.75)
+    clone = image.copy()
+    cv2.namedWindow(window_name)
+    cv2.setMouseCallback(window_name, getClickPosition)
+    # keep looping until the 'q' key is pressed
+    while True:
+        # display the image and wait for a keypress
+        cv2.imshow(window_name, image)
+        key = cv2.waitKey(1) & 0xFF
+        # if the 'r' key is pressed, reset the clicked region
+        if key == ord("r"):
+            image = clone.copy()
+            refPt = []
+        # if the 'c' key is pressed, break from the loop
+        elif key == ord("c"):
+            break
+            # close all open windows
+    cv2.destroyAllWindows()
+    refPt = np.array(refPt)
+    cx = refPt[:, 0]
+    cy = refPt[:, 1]
+    img = clone[:, :, ::-1]
+    return img, cx, cy, imgPath
 
     

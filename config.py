@@ -39,5 +39,19 @@ class Config:
         self.network = network
         self.gpu = gpu
 
-DefaultConfig = Config()
 
+class TestConfig:
+    def __init__(self,
+    application = 'Nucleus',
+    weights_path = "weights/NuClick_Nuclick_40xAll.pth",
+    network = "NuClick",
+    threshold = 0.5
+    ) -> None:
+        self.application = application
+        self.network = network
+        self.weights_path = weights_path,
+        self.threshold = threshold
+
+# Defining the configs
+DemoConfig = TestConfig()
+DefaultConfig = Config()

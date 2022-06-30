@@ -4,7 +4,7 @@ import numpy as np
 
 
 #Returns masks
-#preds(no.patchs, 128, 128), nucPoints(no.patchs, 1, 128, 128) 
+#preds(no.patchs, 128, 128), nucPoints(no.patchs, 1, 128, 128)
 def post_processing(preds, thresh=0.33, minSize=10, minHole=30, doReconstruction=False, nucPoints=None):
     masks = preds > thresh
     masks = remove_small_objects(masks, min_size=minSize)
@@ -13,9 +13,8 @@ def post_processing(preds, thresh=0.33, minSize=10, minHole=30, doReconstruction
         for i in range(len(masks)):
             thisMask = masks[i]
             thisMarker = nucPoints[i, 0, :, :] > 0
-            
             try:
-                thisMask = reconstruction(thisMarker, thisMask, footprint=disk(1))
+                thisMask = reconstruction(thisMarker, thisMask)
                 masks[i] = np.array([thisMask])
             except:
                 warnings.warn('Nuclei reconstruction error #' + str(i))
