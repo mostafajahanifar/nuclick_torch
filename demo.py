@@ -20,7 +20,7 @@ def main():
     model_type = config.network #'NuClick'
     weights_path = config.weights_path[0]
     print(weights_path)
-    
+
     # loading models
     if (model_type.lower() == 'nuclick'):
         net = NuClick_NN(n_channels=5, n_classes=1)
@@ -37,7 +37,7 @@ def main():
     net.load_state_dict(torch.load(weights_path, map_location=device))
 
     logging.info('Model loaded!')
-    
+
     ##Reading images
     # Select one image input paradigm
     # img, cx, cy = readImageAndCentroids(path,name)
@@ -65,7 +65,7 @@ def main():
         logging.info("Original images prediction, DONE!")
 
         masks = post_processing(preds, thresh=config.threshold, minSize=10, minHole=30, doReconstruction=True, nucPoints=nucPoints)
-    
+
         #Generate instanceMap
         instanceMap = gen_instance_map(masks, boundingBoxes, m, n)
         img = np.moveaxis(img, 0, 2)

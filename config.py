@@ -55,4 +55,3 @@ class TestConfig:
 # Defining the configs
 DemoConfig = TestConfig()
 DefaultConfig = Config()
-
