@@ -18,7 +18,8 @@ from utils.guiding_signals import get_patches_and_signals
 def main():
     logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
     model_type = config.network #'NuClick'
-    weights_path = config.weights_path
+    weights_path = config.weights_path[0]
+    print(weights_path)
     
     # loading models
     if (model_type.lower() == 'nuclick'):
@@ -33,7 +34,7 @@ def main():
     logging.info(f'Using device {device}')
 
     net.to(device=device)
-    net.load_state_dict(torch.load("/Users/jlv/Documents/GitHub/storage/weights.pth", map_location=device))
+    net.load_state_dict(torch.load(weights_path, map_location=device))
 
     logging.info('Model loaded!')
     
@@ -68,13 +69,14 @@ def main():
         #Generate instanceMap
         instanceMap = gen_instance_map(masks, boundingBoxes, m, n)
         img = np.moveaxis(img, 0, 2)
-        instanceMap_RGB = label2rgb(instanceMap, image=np.asarray(img)[:, :, :3], alpha=0.3, bg_label=0, bg_color=(0, 0, 0), image_alpha=1,kind='overlay')
-        plt.figure(), plt.imshow(instanceMap_RGB)
-        plt.show()
+        instanceMap_RGB = label2rgb(instanceMap, image=np.asarray(img)[:, :, :3], alpha=0.75, bg_label=0, bg_color=(0, 0, 0), image_alpha=1,kind='overlay')
 
-        # imsave(imgPath[:-4]+'_overlay.png',instanceMap_RGB)
-        imsave(imgPath[:-4] + '_instances.png', instanceMap * 255)
-        imsave(imgPath[:-4] + '_points.png', np.uint8(255 * np.sum(nucPoints, axis=(0, 3))))
+        imsave(imgPath[:-4]+'_overlay.png',instanceMap_RGB)
+        imsave(imgPath[:-4] + '_instances.png', instanceMap)
+
+        plt.subplot(121), plt.imshow(img)
+        plt.subplot(122), plt.imshow(instanceMap_RGB)
+        plt.show()
 
 if __name__=='__main__':
     main()

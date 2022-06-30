@@ -43,7 +43,7 @@ class Config:
 class TestConfig:
     def __init__(self,
     application = 'Nucleus',
-    weights_path = "/Users/jlv/Documents/GitHub/storage/weights.pth",
+    weights_path = "weights/NuClick_Nuclick_40xAll.pth",
     network = "NuClick",
     threshold = 0.5
     ) -> None:
@@ -52,9 +52,7 @@ class TestConfig:
         self.weights_path = weights_path,
         self.threshold = threshold
 
-
-
+# Defining the configs
 DemoConfig = TestConfig()
-
 DefaultConfig = Config()
 

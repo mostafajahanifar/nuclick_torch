@@ -123,13 +123,14 @@ def get_images_points(args):
 
 def readImageAndGetClicks(currdir=os.getcwd()):
     refPt = []
+    window_name = 'R: restart the clicks | C: process clicks using NuClick' # "image"
 
     def getClickPosition(event, x, y, flags, param):
         #        global refPt
         if event == cv2.EVENT_LBUTTONUP:
             refPt.append((x, y))
             cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
-            cv2.imshow("image", image)
+            cv2.imshow(window_name, image)
 
     # load the image, clone it, and setup the mouse callback function
     root = tkinter.Tk()
@@ -141,12 +142,12 @@ def readImageAndGetClicks(currdir=os.getcwd()):
     image = cv2.imread(imgPath)
     #    image = rescale(image,.75)
     clone = image.copy()
-    cv2.namedWindow("image")
-    cv2.setMouseCallback("image", getClickPosition)
+    cv2.namedWindow(window_name)
+    cv2.setMouseCallback(window_name, getClickPosition)
     # keep looping until the 'q' key is pressed
     while True:
         # display the image and wait for a keypress
-        cv2.imshow("image", image)
+        cv2.imshow(window_name, image)
         key = cv2.waitKey(1) & 0xFF
         # if the 'r' key is pressed, reset the clicked region
         if key == ord("r"):
