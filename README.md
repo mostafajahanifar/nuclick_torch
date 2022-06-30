@@ -45,6 +45,9 @@ You only need to make sure that for each image in the `imgdir` exists a point se
 To see all the options you have with `predict.py` function, simply run:
 `python predict.py -h`
 
+We have put an examplar pair of image and point annotations in `demo` directory to be used for tsting purposes.
+> **IMPORTANT**: Please note that the instance maps created by NuClick are saved in `uint16` format. This means that the instances will not be visible in normal image viewers. However, if you open the image in Python using OpenCV or Scikit-Image libraries, you should be able to visualize all the instances (using `matplotlib.pyplot`) or select them based on their indices.
+
 ## Simple Demo GUI
 We have added a simple GUI in order to test NuClick performance on single test images interactively. This can be useful when you don't have the point positions and want to segment some nuclei from image quickly. First, make sure you have configured the right path to saved weights in the `TestConfig` class from `config.py` module. Then, to run the demo GUI, simply call:
 ```
